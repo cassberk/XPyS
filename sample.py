@@ -1,18 +1,17 @@
 # Try to load individual packages at some point
 import pandas as pd
 from copy import deepcopy as dc
-from xps.helper_functions import *
-from xps import bkgrds as backsub
-from xps.data_io import load_excel
+from xps_peakfit.helper_functions import *
+from xps_peakfit import bkgrds as backsub
+from xps_peakfit.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt
 
-# from xps.spectra import xps_spec
-import xps
-import xps.spectra as sp
-from xps.spectra import spectra
-import xps.VAMAS
+import xps_peakfit
+import xps_peakfit.spectra as sp
+# from xps_peakfit.spectra import spectra
+import xps_peakfit.VAMAS
 from ipywidgets.widgets import Checkbox, Button, Layout, HBox, VBox, Output, Text
 import os
 
@@ -126,7 +125,7 @@ class sample:
         if load_derk ==True:
             self.load_derk_sample_object(dataload_obj)
 
-        elif type(dataload_obj) == xps.VAMAS.VAMASExperiment:
+        elif type(dataload_obj) == xps_peakfit.VAMAS.VAMASExperiment:
             self.load_experiment_sample_from_vamas(dataload_obj)
 
         elif (type(dataload_obj) == str) or (type(dataload_obj) == dict):

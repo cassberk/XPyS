@@ -17,16 +17,16 @@ import lmfit as lm
 # from lmfit.model import load_model
 
 import sys
-sys.path.append("/Volumes/GoogleDrive/My Drive/XPS/XPS_Library")
-import xps
+# sys.path.append("/Volumes/GoogleDrive/My Drive/XPS/XPS_Library")
+import xps_peakfit
 # from xps.io import loadmodel
-from xps import bkgrds as backsub
+from xps_peakfit import bkgrds as backsub
 # from xps import bkgrds as background_sub
-from xps.helper_functions import *
-from xps.gui_element_dicts import *
-from xps.auto_fitting import *
+from xps_peakfit.helper_functions import *
+from xps_peakfit.gui_element_dicts import *
+# from xps_peakfit.auto_fitting import *
 
-import xps.VAMAS
+import xps_peakfit.VAMAS
 
 import os
 import glob
