@@ -297,7 +297,7 @@ class spectra:
             
             
             
-    def plot_fits(self,specific_points = None, plot_with_background_sub = False,ref_lines = False,colors = None,infig = None, inaxs = None, offset = 0):
+    def plot_fitresults(self,specific_points = None, plot_with_background_sub = False,ref_lines = False,colors = None,infig = None, inaxs = None, offset = 0):
             
 
         if colors is None:
