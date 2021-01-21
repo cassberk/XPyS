@@ -29,25 +29,23 @@ def save_sample(sample_obj,filepath = None, experiment_name = None):
 
     experiment_group ['total_area'] = sample_obj.total_area
 
-    """json dictionaries"""
+    #json dictionaries
     experiment_group.attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
     experiment_group.attrs['atomic_percent'] = json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
 
 
     for spectra in sample_obj.element_scans:
 
-        """Create a new spectra group
-        that contains all the spectra and analysis
-        """
+        # Create a new spectra group that contains all the spectra and analysis
         experiment_group.require_group(spectra)
 
-        """Datasets"""
+        # Datasets
         dsets = ('E','I','esub','isub','area','bg','BE_adjust')
         
         for attr in dsets:
                 experiment_group [spectra][attr] = sample_obj.__dict__[spectra].__dict__[attr]
 
-        """bgpars"""
+        # bgpars
         if ('bgpars' in sample_obj.__dict__[spectra].__dict__.keys()) and (any(sample_obj.__dict__[spectra].bgpars)):
             dt = h5py.special_dtype(vlen=str) 
             bgpars = np.array([sample_obj.__dict__[spectra].bgpars[i].dumps() for i in range(len(sample_obj.__dict__[spectra].bgpars))], dtype=dt) 
@@ -55,10 +53,9 @@ def save_sample(sample_obj,filepath = None, experiment_name = None):
 
 
         
-        """save lmfit spectra attributes as datasets
-        using the lmfit method .dumps() which is a wrapper for json.dumps the lmfit objects are serialied info JSON
-        format and stored as a string array in hdf5
-        """
+        # save lmfit spectra attributes as datasets using the lmfit method .dumps() which is a wrapper for json.dumps
+        # the lmfit objects are serialied info JSON format and stored as a string array in hdf5
+
         lm_spec_attr = ('fit_results','params','mod')
         
         dt = h5py.special_dtype(vlen=str) 
@@ -71,7 +68,7 @@ def save_sample(sample_obj,filepath = None, experiment_name = None):
                 experiment_group [spectra].create_dataset(attr,data = 'Not Specified')
 
 
-        """Attributes"""    
+        # Attributes   
         
         attributes = ('position_names','element_ctrl','orbital','pairlist','parent_sample','prefixlist')
         for attr in attributes:
@@ -80,7 +77,7 @@ def save_sample(sample_obj,filepath = None, experiment_name = None):
             except:
                 experiment_group [spectra].attrs[attr] = 'Not Specified'
 
-        """crop_info"""
+        # crop_info
         experiment_group [spectra].attrs['bg_bounds'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][0])
         experiment_group [spectra].attrs['bg_type'] = sample_obj.__dict__[spectra].__dict__['bg_info'][1]
         if sample_obj.__dict__[spectra].__dict__['bg_info'][1] =='UT2':
@@ -168,3 +165,124 @@ def write_vamas_to_hdf5(vamas_obj, hdf5file):
 
 
 
+def load_sample(sample_obj,filepath = None, experiment_name = None):
+
+    f= h5py.File(filepath,"r")
+
+    sample_obj.data_path = f[experiment_name].attrs['data_path']
+    sample_obj.element_scans = f[experiment_name].attrs['element_scans']
+    sample_obj.sample_name = f[experiment_name].attrs['sample_name']
+    sample_obj.positions = f[experiment_name].attrs['positions']
+    try:
+        sample_obj.data_raw = f[experiment_name]['raw_data']['raw_vamas_data'][...]
+    except:
+        pass
+#     sample_obj.__dict__['data'] = {}
+#     sample_obj.__dict__['bg_info'] = {}
+
+    # """Background subtraction dictionary"""
+    sample_obj.bg_info = json.loads(f[experiment_name].attrs['bg_info'])
+
+    for spec in sample_obj.element_scans:
+        print(spec)
+        # """Create a new group that is a spectra object
+        # that contains all the spectra and analysis
+        # """
+
+        sample_obj.__dict__[spec] = xps_peakfit.spectra.spectra(spectra_name = spec)
+#         sample_obj.__dict__['data'][spec] = {}
+        # """Datasets"""
+
+        # """E, I, esub, isub"""
+        sample_obj.__dict__[spec].E = f[experiment_name][spec]['E'][...]
+        sample_obj.__dict__[spec].I= f[experiment_name][spec]['I'][...]
+        sample_obj.__dict__[spec].esub = f[experiment_name][spec]['esub'][...]
+        sample_obj.__dict__[spec].isub = f[experiment_name][spec]['isub'][...]
+
+        # """bg"""
+        sample_obj.__dict__[spec].bg = f[experiment_name][spec]['bg'][...]
+
+        # """bgpars"""
+        if 'bgpars' in f[experiment_name][spec].keys():
+            p = lm.parameter.Parameters()
+            sample_obj.__dict__[spec].bgpars = [p.loads(f[experiment_name][spec]['bgpars'][...][i]) for i in range(len(f[experiment_name][spec]['bgpars'][...]))]
+
+
+        # """area"""    
+        sample_obj.__dict__[spec].area = f[experiment_name][spec]['area'][...]
+
+
+        # """fit_results"""
+        params = lm.parameter.Parameters()
+        modres = lm.model.ModelResult(lm.model.Model(lambda x: x, None), params)
+        try:
+            sample_obj.__dict__[spec].fit_results = [modres.loads(f[experiment_name][spec]['fit_results'][...][i]) for i in range(len(f[experiment_name][spec]['fit_results'][...]))]
+        except:
+            pass
+
+        # """fit_results_idx"""
+        sample_obj.__dict__[spec].fit_results_idx = f[experiment_name][spec]['fit_results_idx'][...]
+
+        # """params"""
+        p = lm.parameter.Parameters()
+        try:
+            sample_obj.__dict__[spec].params = [p.loads(f[experiment_name][spec]['params'][...][i]) for i in range(len(f[experiment_name][spec]['params'][...]))][0]
+        except:
+            pass
+
+        # """mod"""
+        m = lm.model.Model(lambda x: x)
+#         sample_obj.__dict__[spec].mod = [m.loads(f[experiment_name][spec]['mod'][...][i]) for i in range(len(f[experiment_name][spec]['mod'][...]))]
+        try:
+            sample_obj.__dict__[spec].mod = m.loads(f[experiment_name][spec]['mod'][...][0])
+        except:
+            pass
+        # """BE_adjust"""
+        sample_obj.__dict__[spec].BE_adjust = f[experiment_name][spec]['BE_adjust']
+
+        
+                
+#         thickness
+        try:
+            sample_obj.__dict__[spec].thickness = f[experiment_name][spec]['thickness'][...]
+        except:
+            pass
+        
+        try:
+            sample_obj.__dict__[spec].oxide_thickness = json.loads(f[experiment_name][spec].attrs['oxide_thickness'])
+        except:
+            pass     
+        
+        try:
+            sample_obj.__dict__[spec].oxide_thickness_err = json.loads(f[experiment_name][spec].attrs['oxide_thickness_err'])
+        except:
+            pass
+        
+        
+        
+        
+        # """Attributes"""
+        # """element_ctrl"""
+        sample_obj.__dict__[spec].element_ctrl = f[experiment_name][spec].attrs['element_ctrl']
+
+        # """orbital"""
+        sample_obj.__dict__[spec].orbital = f[experiment_name][spec].attrs['orbital']
+
+        # """pairlist"""
+        sample_obj.__dict__[spec].pairlist = f[experiment_name][spec].attrs['pairlist']
+
+        # """parent_sample"""
+#         sample_obj.__dict__[spec].parent_sample = f[experiment_name][spec].attrs['parent_sample']
+        sample_obj.__dict__[spec].parent_sample = f[experiment_name].attrs['sample_name']
+        # """prefixlist"""
+        sample_obj.__dict__[spec].prefixlist = list(f[experiment_name][spec].attrs['prefixlist'])
+
+        # """bg_info"""
+        sample_obj.__dict__[spec].bg_info = sample_obj.bg_info[spec]
+    
+    # sample_obj.bkgrd_sub_dict[spec] = [tuple(f['XPS1'][spec].attrs['bkgrd_sub_bounds']),f['XPS1'][spec].attrs['bkgrd_sub_type']]
+    # if 'bkgrd_sub_starting_pars' in f['XPS1'][spec].attrs:
+    #     sample_obj.bkgrd_sub_dict[spec].append(tuple(f['XPS1'][spec].attrs['bkgrd_sub_starting_pars']))
+    #     print('in')
+
+    f.close()
