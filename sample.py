@@ -112,7 +112,7 @@ class sample:
         """
         self.sample_name = name
         self.bg_info = bkgrd_subtraction_dict
-        dfSF = pd.read_excel(r'/Volumes/GoogleDrive/My Drive/XPS/XPS_Library/Sensitivity_Factors.xlsx', keep_default_na = False)
+        dfSF = pd.read_excel(r'~/code/xps_peakfit/Sensitivity_Factors.xlsx', keep_default_na = False)#Do this better
 
         self.rsf = {dfSF['element'][dfSF['SF'] != ''].iloc[i] : dfSF['SF'][dfSF['SF'] != ''].iloc[i] for i in range(len(dfSF[dfSF['SF'] != '']))}
         self.offval = offval

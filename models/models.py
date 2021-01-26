@@ -1,9 +1,26 @@
 import h5py
 import lmfit as lm
+import os
+
+def find_files(filename, search_path):
+    result = []
+
+    # Wlaking top-down from the root
+    for root, directory, files in os.walk(search_path):
+        if filename in files:
+            result.append(os.path.join(root, filename))
+    return result
+
 
 def load_model(model):
+    model_filename = model+'.hdf5'
+    model_filepath = find_files(model_filename,'/Users/cassberk/code/xps_peakfit/models')
+    print(model_filepath)
+    if len(model_filepath) > 1:
+        print('there are more than one files with that name',model_filepath)
+        return
 
-    f = h5py.File(model+'.hdf5','r')
+    f = h5py.File(model_filepath[0],'r')
     
     # model
     try:
