@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from xps.gui_element_dicts import *
+from xps_peakfit.gui_element_dicts import *
 
 def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = None, specify_names = None, specify_spectra = None, capsize = 20):
 
