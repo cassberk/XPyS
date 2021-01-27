@@ -113,7 +113,26 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         experiment_group[spectra].attrs['bg_bounds'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][0])
         experiment_group[spectra].attrs['bg_type'] = sample_obj.__dict__[spectra].__dict__['bg_info'][1]
         if sample_obj.__dict__[spectra].__dict__['bg_info'][1] =='UT2':
-            experiment_group [spectra].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
+            experiment_group[spectra].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
+
+
+        # thickness
+        try:
+            experiment_group[spectra].create_dataset('thickness', data = sample_obj.__dict__[spectra].thickness)
+        except:
+            experiment_group[spectra].attrs['thickness'] = 'Not Specified'
+            pass
+        
+        try:
+            experiment_group[spectra].attrs['oxide_thickness'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness, default=dumper, indent=2)
+        except:
+            experiment_group[spectra].attrs['oxide_thickness'] = 'Not Specified'
+        try:
+            experiment_group[spectra].attrs['oxide_thickness_err'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness_err, default=dumper, indent=2)
+        except:
+            experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
+            pass     
+        
 
     f.close()
 
@@ -240,12 +259,12 @@ def load_sample(sample_obj,filepath = None, experiment_name = None):
         except:
             pass
 
-        # fit_results_idx
-        try:
-            sample_obj.__dict__[spec].fit_results_idx = f[experiment_name][spec]['fit_results_idx'][...]
-        except:
-            print('couldnt open fit_results_idx')
-            pass
+        # fit_results_idx (I dont think I need this anymore, but will keep it for a bit just to be safe)
+        # try:
+        #     sample_obj.__dict__[spec].fit_results_idx = f[experiment_name][spec]['fit_results_idx'][...]
+        # except:
+        #     print('couldnt open fit_results_idx')
+        #     pass
 
         # params
         p = lm.parameter.Parameters()

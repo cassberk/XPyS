@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy as dc
-from xps.gui_element_dicts import *
+from xps_peakfit.gui_element_dicts import *
 
-def thickness_compositions(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiOx4_32_'],substrate='Si_32_',\
+def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiOx4_32_'],substrate='Si_32_',\
     S_oxide=1,S_substrate=1,EAL=2.84,specific_points = None,SFactors = None, plotflag = True):
     """
     Plots the thickness of each fit of the spectra object and then breaks the thickness into
@@ -34,7 +34,7 @@ def thickness_compositions(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','S
 
     fit_component = {key: np.empty(len(pts)) for key in [sample.pairlist[i][0] for i in range(len(sample.pairlist))]} 
 
-    sample.adjusted_oxide_percentage = {key: np.empty(len(pts)) for key in oxides} 
+    sample.oxide_thickness = {key: np.empty(len(pts)) for key in oxides} 
     sample.thickness =np.empty(len(pts))
 
     iter=0
@@ -52,7 +52,7 @@ def thickness_compositions(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','S
 
         for pairs in oxides:
 
-            sample.adjusted_oxide_percentage[pairs][k[0]] = sample.thickness[k[0]] * ( fit_component[pairs][k[0]]/sum([fit_component[ox][k[0]] for ox in oxides]) )
+            sample.oxide_thickness[pairs][k[0]] = sample.thickness[k[0]] * ( fit_component[pairs][k[0]]/sum([fit_component[ox][k[0]] for ox in oxides]) )
 
     if plotflag == True:
         width = 0.8
@@ -65,9 +65,9 @@ def thickness_compositions(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','S
         comps_so_far = []
         for ox in enumerate(oxides):
 
-            bottom_iter = sum([sample.adjusted_oxide_percentage[i] for i in comps_so_far])
+            bottom_iter = sum([sample.oxide_thickness[i] for i in comps_so_far])
 
-            p[ox[0]] = ax.bar(pts,sample.adjusted_oxide_percentage[ox[1]],width, bottom = bottom_iter, \
+            p[ox[0]] = ax.bar(pts,sample.oxide_thickness[ox[1]],width, bottom = bottom_iter, \
                             color = element_color[ox[1]])
 
 

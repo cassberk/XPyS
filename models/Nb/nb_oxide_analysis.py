@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy as dc
 import lmfit as lm
-from xps.gui_element_dicts import *
+from xps_peakfit.gui_element_dicts import *
 
 """
 Series of funcitons for analyzing thicknesses of the different oxides for NbOxides
@@ -75,7 +75,7 @@ def thickness_residual(pars,x,data,error,transfer,EAL,obj_fun = 'Chi', split=Fal
 
 
 
-def oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substrate=None,\
+def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substrate=None,\
     EAL=None,pars=None, fitting_alg = 'powell',obj_fun = 'S',specific_points = None,colors = None,fitflag = True,\
         plotflag = True):
 
@@ -113,8 +113,8 @@ def oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substrate=N
 
         sample.fit_component = {key: np.empty(len(pts)) for key in [sample.pairlist[i][0] for i in range(len(sample.pairlist))]} 
 
-        sample.adjusted_oxide_thickness = {key: np.empty(len(pts)) for key in oxides}
-        sample.adjusted_oxide_thickness_err = {key: np.empty(len(pts)) for key in oxides} 
+        sample.oxide_thickness = {key: np.empty(len(pts)) for key in oxides}
+        sample.oxide_thickness_err = {key: np.empty(len(pts)) for key in oxides} 
         sample.thickness =np.empty(len(pts))
         oxide_thick_fit_result = [[] for i in range(len(pts))]
 
@@ -152,13 +152,13 @@ def oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substrate=N
             result = fitter.minimize(method = fitting_alg)
 
             # sample.oxide_thick_fit_result[k[0]] = dc(result)
-            sample.adjusted_oxide_thickness['Nb2O5_52_'][k[0]] = result.params['Nb2O5_T'].value
-            sample.adjusted_oxide_thickness['NbO2_52_'][k[0]] = result.params['NbO2_T'].value
-            sample.adjusted_oxide_thickness['NbO_52_'][k[0]] = result.params['NbO_T'].value
+            sample.oxide_thickness['Nb2O5_52_'][k[0]] = result.params['Nb2O5_T'].value
+            sample.oxide_thickness['NbO2_52_'][k[0]] = result.params['NbO2_T'].value
+            sample.oxide_thickness['NbO_52_'][k[0]] = result.params['NbO_T'].value
             
-            sample.adjusted_oxide_thickness_err['Nb2O5_52_'][k[0]] = result.params['Nb2O5_T'].stderr
-            sample.adjusted_oxide_thickness_err['NbO2_52_'][k[0]] = result.params['NbO2_T'].stderr
-            sample.adjusted_oxide_thickness_err['NbO_52_'][k[0]] = result.params['NbO_T'].stderr
+            sample.oxide_thickness_err['Nb2O5_52_'][k[0]] = result.params['Nb2O5_T'].stderr
+            sample.oxide_thickness_err['NbO2_52_'][k[0]] = result.params['NbO2_T'].stderr
+            sample.oxide_thickness_err['NbO_52_'][k[0]] = result.params['NbO_T'].stderr
     #         print(result.params['Nb2O5_T'].value)
     #         print(result.params['Nb2O5_T'].stderr)
     
@@ -178,10 +178,10 @@ def oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substrate=N
         comps_so_far = []
         for ox in enumerate(oxides):
 
-            bottom_iter = sum([sample.adjusted_oxide_thickness[i] for i in comps_so_far])
+            bottom_iter = sum([sample.oxide_thickness[i] for i in comps_so_far])
 
-            p[ox[0]] = ax.bar(np.arange(0,len(pts)),sample.adjusted_oxide_thickness[ox[1]],width, bottom = bottom_iter, \
-                          yerr = sample.adjusted_oxide_thickness_err[ox[1]], color = hue[ox[1]],capsize = 5)
+            p[ox[0]] = ax.bar(np.arange(0,len(pts)),sample.oxide_thickness[ox[1]],width, bottom = bottom_iter, \
+                          yerr = sample.oxide_thickness_err[ox[1]], color = hue[ox[1]],capsize = 5)
 
 
             comps_so_far.append(ox[1])
