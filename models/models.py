@@ -15,10 +15,11 @@ def find_files(filename, search_path):
 def load_model(model):
     model_filename = model+'.hdf5'
     model_filepath = find_files(model_filename,'/Users/cassberk/code/xps_peakfit/models')
-    print(model_filepath)
+
     if len(model_filepath) > 1:
         print('there are more than one files with that name',model_filepath)
         return
+    print('Model loaded from:',model_filepath[0])
 
     f = h5py.File(model_filepath[0],'r')
     
@@ -52,3 +53,13 @@ def load_model(model):
     f.close()
     
     return mod, pars, pairlist, element_ctrl
+
+
+def model_list():
+    result = []
+    for root, dirs, files in os.walk("/Users/cassberk/code/xps_peakfit/models"):
+        for file in files:
+            if file.endswith(".hdf5"):
+                result.append(file.split('.')[-2])
+                # print(file.split('.')[-2])
+    return result
