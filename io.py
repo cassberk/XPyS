@@ -5,6 +5,8 @@ import xps_peakfit.sample
 import xps_peakfit.spectra
 import json
 import lmfit as lm
+from pathlib import Path
+import os
 
 def dumper(obj):
     try:
@@ -17,7 +19,9 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
     if experiment_name == None:
         print('Must Name the experiment')
         return
-    
+
+    # Path(os.path.join(*filepath.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
+
     f = h5py.File(filepath,'a')
     if experiment_name in f.keys() and force == False:
         print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
@@ -34,6 +38,7 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
     try:
         write_vamas_to_hdf5(sample_obj.data_raw, experiment_group)
     except:
+        print('Couldnt write vamas file')
         pass
 
     exp_attr = ('data_path','element_scans','all_scans','sample_name','positions')
@@ -207,8 +212,10 @@ def load_sample(sample_obj,filepath = None, experiment_name = None):
     sample_obj.element_scans = f[experiment_name].attrs['element_scans']
     sample_obj.sample_name = f[experiment_name].attrs['sample_name']
     sample_obj.positions = f[experiment_name].attrs['positions']
-
-    sample_obj.atomic_percent = json.loads(f[experiment_name].attrs['atomic_percent'])
+    try:
+        sample_obj.atomic_percent = json.loads(f[experiment_name].attrs['atomic_percent'])
+    except:
+        pass
 
     try:
         sample_obj.data_raw = f[experiment_name]['raw_data']['raw_vamas_data'][...]
@@ -303,8 +310,6 @@ def load_sample(sample_obj,filepath = None, experiment_name = None):
             sample_obj.__dict__[spec].oxide_thickness_err = json.loads(f[experiment_name][spec].attrs['oxide_thickness_err'])
         except:
             pass
-        
-        
         
         
         # Attributes
