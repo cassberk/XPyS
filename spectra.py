@@ -265,7 +265,7 @@ class spectra:
         # return self.esub, self.isub[i], self.bg[i], self.bgpars[i], self.area[i]
 
 
-    def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True):
+    def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,update_with_prev_pars = False):
 
 
         if not hasattr(self,"fit_results"):
@@ -281,6 +281,9 @@ class spectra:
 
             self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
+            if update_with_prev_pars ==True:
+                self.params = self.fit_results[i].params.copy()
+                
             if track:
                 pbar.update()
         
@@ -307,8 +310,8 @@ class spectra:
 
         if specific_points is None:
         
-            subplotrows =  math.ceil((len(self.fit_results_idx)/2)) 
-            plot_idx = self.fit_results_idx
+            subplotrows =  math.ceil((len([j for j,x in enumerate(self.fit_results) if x])/2)) 
+            plot_idx = [j for j,x in enumerate(self.fit_results) if x]
             print(plot_idx)
         else:
             subplotrows =  math.ceil((len(specific_points)/2))
