@@ -97,10 +97,10 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
             
         
     if specific_points == None:
-        if hasattr(sample,'fit_results_idx'):
-            pts = [j for j,x in enumerate(sample.fit_results) if x] 
-        else:
-            pts = [j for j,x in enumerate(sample.params_full) if x] 
+        # if hasattr(sample,'fit_results_idx'):
+        pts = [j for j,x in enumerate(sample.fit_results) if x] 
+        # else:
+        #     pts = [j for j,x in enumerate(sample.params_full) if x] 
 
     else:
         pts = dc(specific_points)
@@ -124,10 +124,10 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
 
             for pairs in sample.pairlist:
 
-                if hasattr(sample,'fit_results_idx'):
-                    sample.fit_component[pairs[0]][k[0]] = sum( [sample.fit_results[k[1]].params[pairs[i] + 'amplitude'].value for i in range(len(pairs))] )
-                else:
-                    sample.fit_component[pairs[0]][k[0]] = sum( [sample.params_full[k[1]][pairs[i] + 'amplitude'].value for i in range(len(pairs))] )                    
+                # if hasattr(sample,'fit_results_idx'):
+                sample.fit_component[pairs[0]][k[0]] = sum( [sample.fit_results[k[1]].params[pairs[i] + 'amplitude'].value for i in range(len(pairs))] )
+                # else:
+                #     sample.fit_component[pairs[0]][k[0]] = sum( [sample.params_full[k[1]][pairs[i] + 'amplitude'].value for i in range(len(pairs))] )                    
 
             sample.thickness[k[0]] = np.mean( EAL*np.log( 1 + S_substrate*sum([sample.fit_component[ox][k[0]] for ox in oxides])/(S_oxide*sample.fit_component[substrate][k[0]]) ) ) 
             
@@ -140,10 +140,10 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
 
             x = np.linspace(0,10,10001)
             
-            if hasattr(sample,'fit_results_idx'):
-                err = {key[0]: sample.fit_results[k[0]].params[key[0] + 'amplitude'].stderr for key in sample.pairlist}
-            else:
-                err = {key[0]: sample.params_full[k[0]][key[0] + 'amplitude'].stderr for key in sample.pairlist} 
+            # if hasattr(sample,'fit_results_idx'):
+            err = {key[0]: sample.fit_results[k[0]].params[key[0] + 'amplitude'].stderr for key in sample.pairlist}
+            # else:
+                # err = {key[0]: sample.params_full[k[0]][key[0] + 'amplitude'].stderr for key in sample.pairlist} 
                     
                         
             tran = transfer_func(np.max(x),len(x),EAL,0)
