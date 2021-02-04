@@ -20,7 +20,19 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         print('Must Name the experiment')
         return
 
+    if sample_obj.sample_name == None:
+        print('You must name the sample')
+        return
+
     # Path(os.path.join(*filepath.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
+    try:
+        os.makedirs('/'.join(filepath.split('/')[:-1]))
+    except OSError as e:
+        print(e)
+        print('use force')
+        return
+
+
 
     f = h5py.File(filepath,'a')
     if experiment_name in f.keys() and force == False:
@@ -40,6 +52,8 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
     except:
         print('Couldnt write vamas file')
         pass
+
+
 
     exp_attr = ('data_path','element_scans','all_scans','sample_name','positions')
     for attr in exp_attr:
@@ -204,7 +218,9 @@ def write_vamas_to_hdf5(vamas_obj, hdf5file):
 
 
 
-def load_sample(sample_obj,filepath = None, experiment_name = None):
+def load_sample(filepath = None, experiment_name = None):
+
+    sample_obj = xps_peakfit.sample.sample(overview=False)
 
     f= h5py.File(filepath,"r")
 
@@ -235,7 +251,7 @@ def load_sample(sample_obj,filepath = None, experiment_name = None):
         # that contains all the spectra and analysis
 
         sample_obj.__dict__[spec] = xps_peakfit.spectra.spectra(spectra_name = spec)
-
+        sample_obj.__dict__[spec].spectra_name = sample_obj.sample_name
         # Datasets
         # E, I, esub, isub
         sample_obj.__dict__[spec].E = f[experiment_name][spec]['E'][...]
@@ -302,7 +318,8 @@ def load_sample(sample_obj,filepath = None, experiment_name = None):
             pass
         
         try:
-            sample_obj.__dict__[spec].oxide_thickness = json.loads(f[experiment_name][spec].attrs['oxide_thickness'])
+            tempdict = json.loads(f[experiment_name][spec].attrs['oxide_thickness'])
+            sample_obj.__dict__[spec].oxide_thickness = {oxide:np.array(tempdict[oxide]) for oxide in tempdict.keys()}
         except:
             pass     
         
@@ -335,6 +352,7 @@ def load_sample(sample_obj,filepath = None, experiment_name = None):
 
     f.close()
 
+    return sample_obj
 
 
 
