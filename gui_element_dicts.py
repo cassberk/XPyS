@@ -168,7 +168,17 @@ element_color['F_'] = 'green'
 
 element_refpos['F_'] = 688.5
 
+element_text['F1_'] = '$F1$'
+element_text['F2_'] = '$F2$'
+element_text['F3_'] = '$F3$'
 
+element_color['F1_'] = 'green'
+element_color['F2_'] = 'teal'
+element_color['F3_'] = 'blue'
+
+element_refpos['F1_'] = 688.5
+element_refpos['F2_'] = 688.5
+element_refpos['F3_'] = 688.5
 
 ### Nitrogen
 element_text['N1_'] = '$N1$'
