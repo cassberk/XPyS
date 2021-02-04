@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from xps.gui_element_dicts import *
+from xps_peakfit.gui_element_dicts import *
+# from embed import shell()
 
 def plot_oxides(sample_spectra,set_idx = None, error = 'std', width = 0.8,capsize = 20):
 
@@ -15,35 +16,25 @@ def plot_oxides(sample_spectra,set_idx = None, error = 'std', width = 0.8,capsiz
 
 
     for i in range(len(sample_spectra)):
-        if hasattr(sample_spectra[i],'adjusted_oxide_percentage'):
-            sample_dic_mean[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].adjusted_oxide_percentage[oxide]\
-                                                        [~np.isnan(sample_spectra[i].adjusted_oxide_percentage[oxide])].mean()\
-                                                        for oxide in list(sample_spectra[i].adjusted_oxide_percentage.keys())}
-
-            sample_dic_err[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].adjusted_oxide_percentage[oxide]\
-                                                            [~np.isnan(sample_spectra[i].adjusted_oxide_percentage[oxide])].std()\
-                                                            for oxide in list(sample_spectra[i].adjusted_oxide_percentage.keys())}
-        
-        elif hasattr(sample_spectra[i],'adjusted_oxide_thickness'):
        
-            sample_dic_mean[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].adjusted_oxide_thickness[oxide]\
-                                                        [~np.isnan(sample_spectra[i].adjusted_oxide_thickness[oxide])].mean()\
-                                                        for oxide in list(sample_spectra[i].adjusted_oxide_thickness.keys())}
+        sample_dic_mean[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].oxide_thickness[oxide]\
+                                                    [~np.isnan(sample_spectra[i].oxide_thickness[oxide])].mean()\
+                                                    for oxide in list(sample_spectra[i].oxide_thickness.keys())}
 
-            if error == 'std':
-                sample_dic_err[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].adjusted_oxide_thickness[oxide]\
-                                                         [~np.isnan(sample_spectra[i].adjusted_oxide_thickness[oxide])].std()\
-                                                         for oxide in list(sample_spectra[i].adjusted_oxide_thickness.keys())}
-            elif error == 'max-min':
-                sample_dic_err[sample_spectra[i].spectra_name] = {oxide:np.max(sample_spectra[i].adjusted_oxide_thickness[oxide]\
-                                                         [~np.isnan(sample_spectra[i].adjusted_oxide_thickness[oxide])] ) - \
-                                                             np.min(sample_spectra[i].adjusted_oxide_thickness[oxide]\
-                                                         [~np.isnan(sample_spectra[i].adjusted_oxide_thickness[oxide])] ) 
-                                                         for oxide in list(sample_spectra[i].adjusted_oxide_thickness.keys())}        
-            if error == 'var':
-                sample_dic_err[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].adjusted_oxide_thickness[oxide]\
-                                                         [~np.isnan(sample_spectra[i].adjusted_oxide_thickness[oxide])].var()\
-                                                         for oxide in list(sample_spectra[i].adjusted_oxide_thickness.keys())}          
+        if error == 'std':
+            sample_dic_err[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].oxide_thickness[oxide]\
+                                                        [~np.isnan(sample_spectra[i].oxide_thickness[oxide])].std()\
+                                                        for oxide in list(sample_spectra[i].oxide_thickness.keys())}
+        elif error == 'max-min':
+            sample_dic_err[sample_spectra[i].spectra_name] = {oxide:np.max(sample_spectra[i].oxide_thickness[oxide]\
+                                                        [~np.isnan(sample_spectra[i].oxide_thickness[oxide])] ) - \
+                                                            np.min(sample_spectra[i].oxide_thickness[oxide]\
+                                                        [~np.isnan(sample_spectra[i].oxide_thickness[oxide])] ) 
+                                                        for oxide in list(sample_spectra[i].oxide_thickness.keys())}        
+        if error == 'var':
+            sample_dic_err[sample_spectra[i].spectra_name] = {oxide:sample_spectra[i].oxide_thickness[oxide]\
+                                                        [~np.isnan(sample_spectra[i].oxide_thickness[oxide])].var()\
+                                                        for oxide in list(sample_spectra[i].oxide_thickness.keys())}          
         sample_spectra[i].spectra_name
         
         
@@ -64,13 +55,7 @@ def plot_oxides(sample_spectra,set_idx = None, error = 'std', width = 0.8,capsiz
 
         comps_so_far = []
 
-        if hasattr(sample[1],'adjusted_oxide_percentage'):
-            oxplotlist = list(sample[1].adjusted_oxide_percentage.keys())
-
-        elif hasattr(sample[1],'adjusted_oxide_thickness'):
-            oxplotlist = list(sample[1].adjusted_oxide_thickness.keys())
-
-        for ox in oxplotlist:
+        for ox in sample[1].oxide_thickness.keys():
 
             bottom_iter = sum(comps_so_far)
 
