@@ -27,7 +27,7 @@ from xps_peakfit.gui_element_dicts import *
 # from xps_peakfit.auto_fitting import *
 
 import xps_peakfit.VAMAS
-
+import xps_peakfit.autofit.autofit
 import os
 import glob
 
@@ -265,7 +265,8 @@ class spectra:
         # return self.esub, self.isub[i], self.bg[i], self.bgpars[i], self.area[i]
 
 
-    def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,update_with_prev_pars = False):
+    def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,update_with_prev_pars = False,\
+        autofit = False):
 
 
         if not hasattr(self,"fit_results"):
@@ -279,11 +280,17 @@ class spectra:
 
         for i in specific_points:
 
+            if autofit:
+                print('autofitting...')
+                params_guess = xps_peakfit.autofit.autofit.autofit(self.esub,self.isub[i],self.orbital)
+                for par in params_guess.keys():
+                    self.params[par].value = params_guess[par]
+
             self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
             if update_with_prev_pars ==True:
                 self.params = self.fit_results[i].params.copy()
-                
+
             if track:
                 pbar.update()
         
