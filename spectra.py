@@ -125,6 +125,7 @@ class spectra:
 
         self.bg_info = bg_info
         self.BE_adjust = BE_adjust
+        self.spectra_name = spectra_name
         # self.prefixlist = [self.mod.components[i].prefix for i in range(len(self.mod.components))]   #Need this
 
         if load_spectra_object == False:

@@ -340,7 +340,6 @@ def load_sample(filepath = None, experiment_name = None):
         sample_obj.__dict__[spec].pairlist = f[experiment_name][spec].attrs['pairlist']
 
         # parent_sample
-#         sample_obj.__dict__[spec].parent_sample = f[experiment_name][spec].attrs['parent_sample']
         sample_obj.__dict__[spec].parent_sample = f[experiment_name].attrs['sample_name']
 
         # prefixlist
@@ -468,3 +467,114 @@ def save_spectra(sample_obj,filepath = None, experiment_name = None,force = Fals
             experiment_group [spectra].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
 
     f.close()
+
+
+def load_spectra(filepath = None, experiment_name = None,spec = None):
+
+    spectra_obj = xps_peakfit.spectra.spectra(spectra_name = spec)
+
+    f= h5py.File(filepath,"r")
+
+    # print(spec)
+
+    # Datasets
+    # E, I, esub, isub
+    spectra_obj.E = f[experiment_name][spec]['E'][...]
+    spectra_obj.I= f[experiment_name][spec]['I'][...]
+    spectra_obj.esub = f[experiment_name][spec]['esub'][...]
+    spectra_obj.isub = f[experiment_name][spec]['isub'][...]
+
+    # bg
+    spectra_obj.bg = f[experiment_name][spec]['bg'][...]
+
+    # bgpars
+    if 'bgpars' in f[experiment_name][spec].keys():
+        p = lm.parameter.Parameters()
+        spectra_obj.bgpars = [p.loads(f[experiment_name][spec]['bgpars'][...][i]) for i in range(len(f[experiment_name][spec]['bgpars'][...]))]
+
+
+    # area 
+    spectra_obj.area = f[experiment_name][spec]['area'][...]
+
+
+    # fit_results
+    try:
+        spectra_obj.fit_results = [[] for i in range(len(f[experiment_name][spec]['fit_results'][...]))]
+        for i in range(len(spectra_obj.fit_results)):
+            params = lm.parameter.Parameters()
+            modres = lm.model.ModelResult(lm.model.Model(lambda x: x, None), params)
+            spectra_obj.fit_results[i] = modres.loads(f[experiment_name][spec]['fit_results'][...][i])
+    except:
+        pass
+
+    # fit_results_idx (I dont think I need this anymore, but will keep it for a bit just to be safe)
+    # try:
+    #     spectra_obj.fit_results_idx = f[experiment_name][spec]['fit_results_idx'][...]
+    # except:
+    #     print('couldnt open fit_results_idx')
+    #     pass
+
+    # params
+    p = lm.parameter.Parameters()
+    try:
+        spectra_obj.params = [p.loads(f[experiment_name][spec]['params'][...][i]) for i in range(len(f[experiment_name][spec]['params'][...]))][0]
+    except:
+        print('couldnt open params')
+        pass
+
+    # mod
+    m = lm.model.Model(lambda x: x)
+#         spectra_obj.mod = [m.loads(f[experiment_name][spec]['mod'][...][i]) for i in range(len(f[experiment_name][spec]['mod'][...]))]
+    try:
+        spectra_obj.mod = m.loads(f[experiment_name][spec]['mod'][...][0])
+    except:
+        print('couldnt open mod')
+        pass
+
+    # BE_adjust
+    spectra_obj.BE_adjust = f[experiment_name][spec]['BE_adjust']
+
+    
+            
+#         thickness
+    try:
+        spectra_obj.thickness = f[experiment_name][spec]['thickness'][...]
+    except:
+        pass
+    
+    try:
+        tempdict = json.loads(f[experiment_name][spec].attrs['oxide_thickness'])
+        spectra_obj.oxide_thickness = {oxide:np.array(tempdict[oxide]) for oxide in tempdict.keys()}
+    except:
+        pass     
+    
+    try:
+        spectra_obj.oxide_thickness_err = json.loads(f[experiment_name][spec].attrs['oxide_thickness_err'])
+    except:
+        pass
+    
+    
+    # Attributes
+    # element_ctrl
+    spectra_obj.element_ctrl = f[experiment_name][spec].attrs['element_ctrl']
+
+    # orbital
+    spectra_obj.orbital = f[experiment_name][spec].attrs['orbital']
+
+    # pairlist
+    spectra_obj.pairlist = f[experiment_name][spec].attrs['pairlist']
+
+    # parent_sample
+#         spectra_obj.parent_sample = f[experiment_name][spec].attrs['parent_sample']
+    spectra_obj.parent_sample = f[experiment_name].attrs['sample_name']
+
+    # prefixlist
+    spectra_obj.prefixlist = list(f[experiment_name][spec].attrs['prefixlist'])
+
+    # bg_info
+    spectra_obj.bg_info = json.loads(f[experiment_name].attrs['bg_info'])[spec]
+    spectra_obj.bg_info[0] = tuple(spectra_obj.bg_info[0])
+
+    f.close()
+
+    return spectra_obj
