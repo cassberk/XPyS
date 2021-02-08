@@ -278,7 +278,7 @@ class sample:
                         save_location = os.path.join( os.getcwd(),'figures',saved_root_name.value  + '_' + str(figure) )     
                         fig_dict[figure].savefig(save_location, bbox_inches='tight')
 
-        return fig_dict, ax_dict
+            return fig_dict, ax_dict
 
 
     #### Analysis Functions

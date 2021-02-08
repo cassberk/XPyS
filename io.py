@@ -63,8 +63,10 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
             experiment_group.attrs[attr] = 'Not Specified'
 
     # total_area
-    experiment_group.create_dataset('total_area', data = sample_obj.total_area)
-
+    try:
+        experiment_group.create_dataset('total_area', data = sample_obj.total_area)
+    except:
+        pass
     
     # scan positions
     try:
@@ -73,8 +75,11 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         experiment_group.attrs['positions'] = 'Not Specified'
         
     #json dictionaries
-    experiment_group.attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
-    experiment_group.attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
+    try:
+        experiment_group.attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
+        experiment_group.attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
+    except:
+        pass
 
     for spectra in sample_obj.element_scans:
 
