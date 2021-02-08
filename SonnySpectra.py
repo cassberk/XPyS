@@ -269,3 +269,21 @@ class SonnySpectra:
             self.df.corr()[par].iloc[0:self.spectra.shape[1]].plot()
             plt.plot(emax,pmax,'x',markersize = 15)
         return pmax,emax
+
+
+    def find_linautofit(self,Xs,Ys):
+        autofitparlist = []
+        fig, axs = plt.subplots(1,len(Xs),figsize = (4*len(Xs),4))
+
+        for i in range(len(Ys)):
+            # print(Ys[i])
+            x = np.array(self.df[Xs[i]])
+            y = np.array(self.df[Ys[i]])
+            m = np.linalg.lstsq(x.reshape(-1,1), y,rcond = None)[0][0]
+            autofitparlist.append(' '.join([Ys[i],'linear',str(np.round(Xs[i],1)),str(m)]))
+
+            axs[i].plot(x, y, 'o')
+            axs[i].plot(x, m*x)
+            axs[i].set_xlabel(str(np.round(Xs[i],2))+' vs '+str(Ys[i]),fontsize = 14)
+        
+    return autofitparlist

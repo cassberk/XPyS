@@ -25,12 +25,12 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         return
 
     # Path(os.path.join(*filepath.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
-    try:
-        os.makedirs('/'.join(filepath.split('/')[:-1]))
-    except OSError as e:
-        print(e)
-        print('use force')
-        return
+    # try:
+    #     os.makedirs('/'.join(filepath.split('/')[:-1]))
+    # except OSError as e:
+    #     print(e)
+    #     print('use force')
+    #     return
 
 
 
