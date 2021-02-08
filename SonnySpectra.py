@@ -37,7 +37,7 @@ import matplotlib.patches as mpatches
 class SonnySpectra:
 
     def __init__(self,spectra=None):
-        print('none')
+        self.info = []
 
     def load_spectra_objs(self,data_paths,spectra_name,exclude_list = []):
 
@@ -86,17 +86,39 @@ class SonnySpectra:
                 i+=1
             clear_output(wait = True)
 
-        y_norm = np.empty(y.shape)
-
-        for i in range(len(y)):
-            y_norm[i,:] = y[i,:]/np.trapz(y[i,:])
             
         self.energy = x
         self.spectra = y
-        self.spectra_N = y_norm
+        self._spectra = y
         # self.df_spectra = pd.DataFrame(self.spectra,columns = self.energy)
         self.df_params = param_df.reset_index(drop = True)
-        self.df_full = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
+        self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
+        self._df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
+
+    def reset(self):
+        self.spectra = dc(self._spectra)
+        self.df = dc(self._df)
+        self.info = []
+
+    def normalize(self):
+        _yN = np.empty(self.spectra.shape)
+
+        for i in range(len(_yN)):
+            _yN[i,:] = self.spectra[i,:]/np.trapz(self.spectra[i,:])
+
+        self.spectra = _yN
+        self.update_info('Normalized')
+
+    def update_info(self,message):
+
+        if self.info != []:
+            if self.info[-1] == message:
+                return
+            else:
+                self.info.append(message)
+
+        else:
+            self.info.append(message)
 
 
     def peak_tracker(self,peak_pos,energy= None,spectra_matrix=None):
@@ -119,13 +141,12 @@ class SonnySpectra:
 
 
     def align_peaks(self,peak_pos,energy=None,spec_set = None,plotflag = True):
+
+        fig = plt.figure()
         if energy == None:
             energy = self.energy
 
-        if spec_set == None:
-            spectra_matrix = self.spectra
-        if spec_set == 'Norm':
-            spectra_matrix = self.spectra_N
+        spectra_matrix = self.spectra
 
         cen = np.empty(len(spectra_matrix))
         amp = np.empty(len(spectra_matrix))
@@ -153,124 +174,100 @@ class SonnySpectra:
             plt.axvline(index_of(energy,peak_pos))
 
         self.spectra_aligned_pos = peak_pos
-        self.spectra_aligned = mv_spec
-        if spec_set =='Norm':
-            self.spectra_aligned_N = mv_spec
+        self.spectra = mv_spec
 
-        if spec_set == None:
-            self.df_aligned_full = pd.DataFrame(self.spectra_aligned,columns = self.energy).join(self.df_params)
-        if spec_set == 'Norm':
-            self.df_aligned_full_N = pd.DataFrame(self.spectra_aligned,columns = self.energy).join(self.df_params)
+        self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
+        self.update_info('adjusted to '+str(peak_pos))
 
-
-    def pca(self):
-        pca_raw = PCA(n_components=3)
-        pca_adj = PCA(n_components=3)
-        pca_adj_N = PCA(n_components=3)
+    def pca(self,n_comps = 3):
+        pca = PCA(n_components=n_comps)
 
         """PCA of raw signal"""
-        X_r = pca_raw.fit(self.spectra)
-        X_tr = pca_raw.fit_transform(self.spectra)
+        X_r = pca.fit(self.spectra)
+        X_tr = pca.fit_transform(self.spectra)
 
-        """PCA of signal adjusted to nb peak"""
-        X_adj = pca_adj.fit(self.spectra_aligned)
-        X_tr_adj = pca_adj.fit_transform(self.spectra_aligned)
+        if self.info != []:
+            print(' '.join(self.info))
 
-        """PCA of normalized signal adjusted to nb peak"""
-        X_adj_N = pca_adj_N.fit(self.spectra_aligned_N)
-        X_tr_adj_N = pca_adj_N.fit_transform(self.spectra_aligned_N)
+        print('explained variance ratio: %s'
+            % str(pca.explained_variance_ratio_ *100 ) )
+        print('cumulative variance: %s'
+            % str(np.cumsum(pca.explained_variance_ratio_ *100) ) ) 
 
-
-        print('raw explained variance ratio: %s'
-            % str(pca_raw.explained_variance_ratio_ *100 ) )
-        print('raw cumulative variance: %s'
-            % str(np.cumsum(pca_raw.explained_variance_ratio_ *100) ) ) 
-        print('')
-        print('adjusted explained variance ratio: %s'
-            % str(pca_adj.explained_variance_ratio_ *100 ) )
-        print('adjusted cumulative variance: %s'
-            % str(np.cumsum(pca_adj.explained_variance_ratio_ *100) ) )
-        print('')
-        print('adjusted normalized explained variance ratio: %s'
-            % str(pca_adj_N.explained_variance_ratio_ *100 ) )
-        print('adjusted normalized cumulative variance: %s'
-            % str(np.cumsum(pca_adj_N.explained_variance_ratio_ *100) ) ) 
-
-        for pc in enumerate(['P1_raw','P2_raw','P3_raw']):
-            self.df_full[pc[1]] = pd.Series(X_tr[:,pc[0]], index = self.df_full.index)
-            
-        for pc in enumerate(['P1_adj','P2_adj','P3_adj']):
-            self.df_aligned_full[pc[1]] = pd.Series(X_tr_adj[:,pc[0]], index = self.df_full.index)
-            
-        for pc in enumerate(['P1_adj_N','P2_adj_N','P3_adj_N']):
-            self.df_aligned_full_N[pc[1]] = pd.Series(X_tr_adj_N[:,pc[0]], index = self.df_full.index)
+        for pc in enumerate(['P1','P2','P3']):
+            self.df[pc[1]] = pd.Series(X_tr[:,pc[0]], index = self.df.index)
 
 
-        fig = plt.figure(figsize = (20,6))
-        ax1 = fig.add_subplot(131)
-        ax2 = fig.add_subplot(132)
-        ax3 = fig.add_subplot(133)
+        fig,ax = plt.subplots()
+
         for i in range(3):
-            ax1.plot(X_r.components_[i,:])
-            ax2.plot(X_adj.components_[i,:])
-            ax3.plot(X_adj_N.components_[i,:])
+            ax.plot(X_r.components_[i,:])
             
-        ax3.legend(['PC1','PC2','PC3'],bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+        ax.legend(['PC1','PC2','PC3'],bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
-        ax1.set_title('Raw Data',fontsize = 18),ax2.set_title('Adjusted to peakpos',fontsize = 18), ax3.set_title('Adjusted to Nb and Normalized',fontsize = 18)
-        for ax in [ax1, ax2, ax3]:
-            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
-                        ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize(18)
+        ax.set_title('Raw Data',fontsize = 18)
+        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                    ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(18)
 
-    def plot_pca(self,x,y):
-        fig1, ((ax1,ax2,ax3),(ax4,ax5,ax6)) = plt.subplots(2,3,figsize = (24,12))
-        # ax1 = fig1.add_subplot(131)
-        # ax2 = fig1.add_subplot(132)
-        # ax3 = fig1.add_subplot(133)
+    # def plot_pca(self,x,y):
+    #     fig1, ((ax1,ax2,ax3),(ax4,ax5,ax6)) = plt.subplots(2,3,figsize = (24,12))
 
-        number_of_plots=len(self.spectra_objects.keys())
-        colormap = plt.cm.nipy_spectral
-        colors = [colormap(i) for i in np.linspace(0, 1,number_of_plots)]
-        ax1.set_prop_cycle('color', colors)
-        ax2.set_prop_cycle('color', colors)
-        ax3.set_prop_cycle('color', colors)
+    #     number_of_plots=len(self.spectra_objects.keys())
+    #     colormap = plt.cm.nipy_spectral
+    #     colors = [colormap(i) for i in np.linspace(0, 1,number_of_plots)]
+    #     ax1.set_prop_cycle('color', colors)
+    #     ax2.set_prop_cycle('color', colors)
+    #     ax3.set_prop_cycle('color', colors)
 
-        for s in self.spectra_objects.keys():
-            # print(s)
-            if self.df_full[self.df_full['sample']==s]['boe'].drop_duplicates().values[0] == 0:
-                mark = '.'
-            else:
-                mark = 'x'
-            ax1.plot(self.df_full[self.df_full['sample']==s][x+'_raw'].values,self.df_full[self.df_full['sample']==s][y+'_raw'].values,mark,markersize = 10)
-            ax2.plot(self.df_aligned_full[self.df_aligned_full['sample']==s][x+'_adj'].values,self.df_aligned_full[self.df_aligned_full['sample']==s][y+'_adj'].values,mark,markersize = 10)
-            ax3.plot(self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][x+'_adj_N'].values,self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][y+'_adj_N'].values,mark,markersize = 10)
+    #     for s in self.spectra_objects.keys():
+    #         # print(s)
+    #         if self.df_full[self.df_full['sample']==s]['boe'].drop_duplicates().values[0] == 0:
+    #             mark = '.'
+    #         else:
+    #             mark = 'x'
+    #         ax1.plot(self.df_full[self.df_full['sample']==s][x+'_raw'].values,self.df_full[self.df_full['sample']==s][y+'_raw'].values,mark,markersize = 10)
+    #         ax2.plot(self.df_aligned_full[self.df_aligned_full['sample']==s][x+'_adj'].values,self.df_aligned_full[self.df_aligned_full['sample']==s][y+'_adj'].values,mark,markersize = 10)
+    #         ax3.plot(self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][x+'_adj_N'].values,self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][y+'_adj_N'].values,mark,markersize = 10)
             
-            if self.df_full[self.df_full['sample']==s]['boe'].drop_duplicates().values[0] == 0:
-                mark = 'bo'
-            else:
-                mark = 'rx'
-            ax4.plot(self.df_full[self.df_full['sample']==s][x+'_raw'].values,self.df_full[self.df_full['sample']==s][y+'_raw'].values,mark,markersize = 10)
-            ax5.plot(self.df_aligned_full[self.df_aligned_full['sample']==s][x+'_adj'].values,self.df_aligned_full[self.df_aligned_full['sample']==s][y+'_adj'].values,mark,markersize = 10)
-            ax6.plot(self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][x+'_adj_N'].values,self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][y+'_adj_N'].values,mark,markersize = 10)
+    #         if self.df_full[self.df_full['sample']==s]['boe'].drop_duplicates().values[0] == 0:
+    #             mark = 'bo'
+    #         else:
+    #             mark = 'rx'
+    #         ax4.plot(self.df_full[self.df_full['sample']==s][x+'_raw'].values,self.df_full[self.df_full['sample']==s][y+'_raw'].values,mark,markersize = 10)
+    #         ax5.plot(self.df_aligned_full[self.df_aligned_full['sample']==s][x+'_adj'].values,self.df_aligned_full[self.df_aligned_full['sample']==s][y+'_adj'].values,mark,markersize = 10)
+    #         ax6.plot(self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][x+'_adj_N'].values,self.df_aligned_full_N[self.df_aligned_full_N['sample']==s][y+'_adj_N'].values,mark,markersize = 10)
 
-        ax1.set_title('Raw')
-        ax2.set_title('Adjusted')
-        ax3.set_title('Adjusted Normalized')
+    #     ax1.set_title('Raw')
+    #     ax2.set_title('Adjusted')
+    #     ax3.set_title('Adjusted Normalized')
 
-        for ax in [ax1,ax2,ax3,ax4,ax5,ax6]:
-            ax.set_xlabel(x)
-            ax.tick_params('x',labelrotation=80)
-            if (ax ==ax1) or (ax ==ax4):
-                ax.set_ylabel(y)
-            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
-                        ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize(20)
+    #     for ax in [ax1,ax2,ax3,ax4,ax5,ax6]:
+    #         ax.set_xlabel(x)
+    #         ax.tick_params('x',labelrotation=80)
+    #         if (ax ==ax1) or (ax ==ax4):
+    #             ax.set_ylabel(y)
+    #         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+    #                     ax.get_xticklabels() + ax.get_yticklabels()):
+    #             item.set_fontsize(20)
 
-        ax3.legend(list(self.spectra_objects.keys()),bbox_to_anchor=(1.05, 1.2), loc='upper left',fontsize = 18)
+    #     ax3.legend(list(self.spectra_objects.keys()),bbox_to_anchor=(1.05, 1.2), loc='upper left',fontsize = 18)
 
-        red_patch = mpatches.Patch(color='red', label='BOE')
-        blue_patch = mpatches.Patch(color='blue', label='No BOE')
+    #     red_patch = mpatches.Patch(color='red', label='BOE')
+    #     blue_patch = mpatches.Patch(color='blue', label='No BOE')
 
-        ax6.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
-        fig1.tight_layout()
+    #     ax6.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
+    #     fig1.tight_layout()
+
+
+    def correlate(self,par,plotflag = True):
+        fig = plt.figure()
+        print(' '.join(self.info))
+        pmax = self.df.corr()[par].iloc[0:self.spectra.shape[1]].max()
+        emax = self.df.corr()[par].iloc[0:self.spectra.shape[1]].idxmax()
+        print('maximum correlation of',pmax,'at',emax)
+        
+        if plotflag:
+            self.df.corr()[par].iloc[0:self.spectra.shape[1]].plot()
+            plt.plot(emax,pmax,'x',markersize = 15)
+        return pmax,emax
