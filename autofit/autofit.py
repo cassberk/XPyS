@@ -1,41 +1,61 @@
 import numpy as np
-from xps_peakfit.helper_functions import guess_from_data
+from xps_peakfit.helper_functions import index_of
 
 
-def autofit(energy,intensity,orbital):
-    if orbital == 'Nb3d':
-        return Nb_autofit(energy = energy,intensity = intensity,\
-            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitNb.txt')
-    else:
-        print('No autofit for that spectra')
-        return
-
-def get_autofit_pars(autofitpars_path):
-    f = open(autofitpars_path, "r")
-    comdic = {}
-    for line in f.readlines():
-    #     print(line)
-        comdic[line.split(' ')[0]] = []
-        comdic[line.split(' ')[0]].append(np.float(line.split(' ')[1]))
-        if len(line.split(' ')) >2:
-                comdic[line.split(' ')[0]].append(np.float(line.split(' ')[2]))
-    f.close()
-    return comdic
-
-
-def Nb_autofit(energy,intensity,autofitpars_path):
-
-    nb_peak,nb_cen = guess_from_data(energy,intensity,negative = None,peakpos = 202.2)
-    nb2o5_peak,nb2o5_cen = guess_from_data(energy,intensity,negative = None,peakpos = 207.5)
-
-    comdic = get_autofit_pars(autofitpars_path)
-    guessdic = {}
-    guessdic['Nb_52_amplitude'] = comdic['Nb_52_amplitude'][0]*nb_peak
+class autofit:
     
-    guessdic['Nb2O5_52_amplitude'] = comdic['Nb2O5_52_amplitude'][0]*nb2o5_peak
-    
-    guessdic['NbO_52_amplitude'] = comdic['NbO_52_amplitude'][0]*np.log(nb_peak) + comdic['NbO_52_amplitude'][1]
-    
-    guessdic['NbO2_52_amplitude'] = comdic['NbO2_52_amplitude'][0]*guessdic['NbO_52_amplitude']
+    def __init__(self,energy,intensity,orbital):
+        self.energy = energy
+        self.intensity = intensity
+        self.orbital = orbital
+        self.autofit_pars = self.get_autofit_pars(self.orbital)
+        self.guess_amplitudes()
 
-    return guessdic
+
+    def get_autofit_pars(self,orbital):
+        if orbital == 'Nb3d':
+            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitNb.txt'
+        elif orbital =='Si2p':
+            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitSi2p.txt'
+        else:
+            print('No autofit yet')
+            return
+
+        f = open(autofitpars_path, "r")
+        comdic = {}
+        for line in f.readlines():
+            # print(line)
+            comdic[line.split(' ')[0]] = [l.rstrip('\n') for l in line.split(' ')[1:]]
+        f.close()
+        return comdic
+
+    def guess_amplitudes(self,energy = None,intensity = None):
+
+        if energy != None:
+            self.energy = energy
+        if intensity != None:
+            self.intensity= intensity
+
+        guessamp = {}
+        for par in self.autofit_pars.keys():
+            
+            print(par)
+            
+            if self.autofit_pars[par][0] == 'linear':
+                idx = index_of(self.energy, np.float(self.autofit_pars[par][1]))
+
+                guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2])
+                
+            elif self.autofit_pars[par][0] == 'log':
+                idx = index_of(self.energy, np.float(self.autofit_pars[par][1]))
+                
+                guessamp[par] = np.float(self.autofit_pars[par][2])*np.log(self.intensity[idx]) + np.float(self.autofit_pars[par][3])
+
+            elif self.autofit_pars[par][0] == 'par':
+                dep_par = self.autofit_pars[par][1]
+                guessamp[par] = guessamp[dep_par]*np.float(self.autofit_pars[par][2])
+
+        self.guess_amps = guessamp
+
+
+

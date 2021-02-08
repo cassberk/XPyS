@@ -17,9 +17,7 @@ import lmfit as lm
 # from lmfit.model import load_model
 
 import sys
-# sys.path.append("/Volumes/GoogleDrive/My Drive/XPS/XPS_Library")
 import xps_peakfit
-# from xps.io import loadmodel
 from xps_peakfit import bkgrds as backsub
 # from xps import bkgrds as background_sub
 from xps_peakfit.helper_functions import *
