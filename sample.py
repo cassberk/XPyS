@@ -189,29 +189,6 @@ class sample:
             self.element_scans = [x for x in list(self.data.keys()) if x not in ('total area', 'Valence','XPS')]
 
 
-    def load_derk_sample_object(self,dataload):
-        filepath = os.path.join('/Volumes/GoogleDrive/My Drive/XPS/XPS_Library/xps/samples',\
-        dataload,'sample_attributes.pkl')
-        f = open(filepath, 'rb')   # 'r' for reading; can be omitted
-        savedict_load = pickle.load(f)         # pickled dictionary with sample attributes
-        f.close() 
-
-        for key in savedict_load.keys():
-            if savedict_load[key] != 'spectra_object':
-                self.__dict__[key] = savedict_load[key]
-
-            elif savedict_load[key] =='spectra_object':
-                print(savedict_load['sample_name']+'-'+key)
-
-                self.__dict__[key] = sp.spectra(savedict_load['sample_name'],key,load_spectra_object = True)
-
-        # analyze = False
-
-
-
-
-
-
 
 
     ####
