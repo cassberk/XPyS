@@ -144,7 +144,7 @@ class spectra:
                 Ei = [index_of(self.E,self.bg_info[0][0]), index_of(self.E,self.bg_info[0][1])]
                 self.esub = self.E[min(Ei):max(Ei)]
                 intensity_crop = self.I[i][min(Ei):max(Ei)]
-                self.bg[i] = backsub.shirley(self.esub, intensity_crop)
+                self.bg[i] = backsub.shirley(self.esub, intensity_crop,self.orbital)
                 self.isub[i]= intensity_crop - self.bg[i]  
                 self.bgpars[i] = None
                 

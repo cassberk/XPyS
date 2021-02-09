@@ -12,7 +12,7 @@ def linear(energy, intensity):
 
 
 
-def shirley(energy, intensity, tol=1e-5, maxit=20):
+def shirley(energy, intensity, orbital, tol=1e-5, maxit=20):
 	"""Calculates shirley background."""
 	if energy[0] < energy[-1]:
 		is_reversed = True
@@ -44,7 +44,7 @@ def shirley(energy, intensity, tol=1e-5, maxit=20):
 			background = bnew.copy()
 		iteration += 1
 	if iteration >= maxit:
-		logger.warning("shirley: Max iterations exceeded before convergence.")
+		logger.warning(orbital+" shirley: Max iterations exceeded before convergence.")
 
 	if is_reversed:
 		return background[::-1]
