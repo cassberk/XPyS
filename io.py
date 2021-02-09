@@ -245,9 +245,14 @@ def load_sample(filepath = None, experiment_name = None):
 
 
     # Background subtraction dictionary
-    sample_obj.bg_info = json.loads(f[experiment_name].attrs['bg_info'])
-
-    sample_obj.total_area = f[experiment_name]['total_area'][...]
+    try:
+        sample_obj.bg_info = json.loads(f[experiment_name].attrs['bg_info'])
+    except:
+        pass
+    try:
+        sample_obj.total_area = f[experiment_name]['total_area'][...]
+    except:
+        pass
     # sample_obj.atomic_percent = json.loads(f[experiment_name]['atomic_percent'][...],dtype = h5py.special_dtype(vlen=str))
 
     for spec in sample_obj.element_scans:
