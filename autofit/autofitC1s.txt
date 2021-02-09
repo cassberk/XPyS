@@ -1,0 +1,6 @@
+C1_amplitude lin 285.4 1.6821955841184675
+C2_amplitude lin 286.8 1.1910751021496415
+C3_amplitude lin 289.6 1.806773805240578
+C1_center mean 285.28
+C2_center mean 286.95
+C3_center mean 289.19
