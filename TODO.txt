@@ -1,0 +1,6 @@
+incorporate peak references with materials project
+turn bksub parameters into class
+config.py for data repos
+model create
+fix spectra color dependency
+fix all gui_element_dict

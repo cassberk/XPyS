@@ -139,7 +139,8 @@ class sample:
         if dataload_obj is None:
             overview = False
         if overview:
-            self.fig_dict, self.ax_dict = self.xps_overview()
+            # self.fig_dict, self.ax_dict = self.xps_overview()
+            self.xps_overview()
 
 
     def load_experiment_sample_from_vamas(self,vamas_obj):
@@ -240,45 +241,13 @@ class sample:
 
         if self.plotflag == True:
 
-            save_figs_button = Button(description="Save Figures") 
-
-            saved_root_name = Text(
-                value=self.sample_name,
-                placeholder='Save filename',
-                disabled=False,
-                layout = Layout(width = '200px', margin = '0 5px 0 0')
-                )
-            save_figs_chkbxs = {init_fig: Checkbox(
-                value= False,
-                description=str(init_fig),
-                style = {'description_width': 'initial'},
-                disabled=False,
-                indent=False
-                ) for init_fig in ['Raw','Subtracted','Atomic_Percent'] }
-
-            display( VBox( [saved_root_name,HBox( [HBox( list( save_figs_chkbxs[chks] for chks in save_figs_chkbxs.keys() ) ), save_figs_button] ) ] ) )
-            # out = Output()
-            # display(out)
-
             fig_dict = {}
             ax_dict = {}
-            fig_dict['Raw'], ax_dict['Raw']= self.plot_all_spectra(offval = self.offval, plotspan = self.plotspan, saveflag=0,filepath = '',figdim=(15,10))
-            fig_dict['Subtracted'], ax_dict['Subtracted'] = self.plot_all_sub(offval = self.offval)
-            fig_dict['Atomic_Percent'], ax_dict['Atomic_Percent'] = self.plot_atomic_percent()
+            self.fig, self.ax= self.plot_all_spectra(offval = self.offval, plotspan = self.plotspan, saveflag=0,filepath = '',figdim=(15,10))
+            self.fig_sub, self.ax_sub = self.plot_all_sub(offval = self.offval)
+            self.fig_atp,self.ax_atp = self.plot_atomic_percent()
 
-            @save_figs_button.on_click
-            def save_figs_on_click(b):
-
-                if not os.path.exists(os.path.join(os.getcwd(),'figures')):
-                    os.makedirs(os.path.join(os.getcwd(),'figures'))
-
-                for figure in save_figs_chkbxs.keys():
-                    if save_figs_chkbxs[figure].value:
-
-                        save_location = os.path.join( os.getcwd(),'figures',saved_root_name.value  + '_' + str(figure) )     
-                        fig_dict[figure].savefig(save_location, bbox_inches='tight')
-
-            return fig_dict, ax_dict
+            # return fig_dict, ax_dict
 
 
     #### Analysis Functions
