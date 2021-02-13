@@ -34,7 +34,7 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
 
 
 
-    f = h5py.File(filepath,'w')
+    f = h5py.File(filepath,'a')
     if experiment_name in f.keys() and force == False:
         print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
             or save the individual attribute you are interested in')
