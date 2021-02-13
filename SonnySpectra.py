@@ -31,6 +31,7 @@ import xps_peakfit.VAMAS
 import xps_peakfit.autofit.autofit
 import os
 import glob
+import h5py
 
 from sklearn.decomposition import PCA
 from scipy.stats import pearsonr
@@ -44,13 +45,24 @@ class SonnySpectra:
 
     def load_spectra_objs(self,data_paths,spectra_name,exclude_list = []):
 
-        datadict = {}
-        f = open(data_paths, "r")
-        for line in f.readlines():
-            # print()
-            if line.split(',')[0].split('/')[-3] not in exclude_list:
-                datadict[line.split(',')[0].split('/')[-3]] = xps_peakfit.io.load_spectra(filepath = line.split(',')[0],experiment_name = line.split(',')[1].split('\n')[0],spec = spectra_name)
-        f.close()
+        if type(data_paths) == str:
+            datadict = {}
+            f = open(data_paths, "r")
+            for line in f.readlines():
+                # print()
+                if line.split(',')[0].split('/')[-3] not in exclude_list:
+                    datadict[line.split(',')[0].split('/')[-3]] = xps_peakfit.io.load_spectra(filepath = line.split(',')[0],experiment_name = line.split(',')[1].split('\n')[0],spec = spectra_name)
+            f.close()
+        elif type(data_paths) == list:
+            datadict = {}
+            for file in data_paths:
+                if file.split('/')[-1] not in exclude_list:
+                    f = h5py.File(os.path.join(file,'XPS','XPS_'+file.split('/')[-1]+'.hdf5'),'r+')
+                    exps = [k for k in f.keys()]
+                    print(file.split('/')[-1],exps[0])
+                    datadict[file.split('/')[-1]] = xps_peakfit.io.load_spectra(filepath = os.path.join(file,'XPS','XPS_'+file.split('/')[-1]+'.hdf5'),experiment_name = exps[0],spec = spectra_name)
+                    f.close()
+
         self.spectra_objects = datadict
 
     def build_spectra_matrix(self,spectra_dict=None,new_bg_sub = False,target = False,targetname = 'target'):
