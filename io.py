@@ -34,7 +34,7 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
 
 
 
-    f = h5py.File(filepath,'a')
+    f = h5py.File(filepath,'w')
     if experiment_name in f.keys() and force == False:
         print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
             or save the individual attribute you are interested in')
@@ -77,29 +77,49 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
     #json dictionaries
     try:
         experiment_group.attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
+    except:
+        print('couldnt bg_info on sampleobj')
+        pass
+    try:
         experiment_group.attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
     except:
+        print('couldnt atomic_percent on sample obj')
         pass
 
     for spectra in sample_obj.element_scans:
 
         # Create a new spectra group that contains all the spectra and analysis
         experiment_group.require_group(spectra)
+        try:
+            experiment_group[spectra].attrs['parent_sample'] = sample_obj.__dict__[spectra].__dict__['parent_sample']
+        except:
+            experiment_group[spectra].attrs['parent_sample'] = 'Not Specified'
 
         # Datasets
-        dsets = ('E','I','esub','isub','area','bg','BE_adjust')
+        dsets = ('E','I','esub','isub','area','BE_adjust')
         
         for attr in dsets:
             try:
                 experiment_group[spectra][attr] = sample_obj.__dict__[spectra].__dict__[attr]
             except:
                 experiment_group[spectra][attr] = 'Not Specified'
+                
+        # Background subtraction
+        try:
+            experiment_group[spectra]['bg'] = sample_obj.__dict__[spectra].__dict__['bg']
+        except:
+            experiment_group[spectra]['bg'] = 'Not Specified'
+        # crop_info
+        experiment_group[spectra]['bg'].attrs['bg_bounds'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][0])
+        experiment_group[spectra]['bg'].attrs['bg_type'] = sample_obj.__dict__[spectra].__dict__['bg_info'][1]
+        if sample_obj.__dict__[spectra].__dict__['bg_info'][1] =='UT2':
+            experiment_group[spectra]['bg'].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
 
         # bgpars
         if ('bgpars' in sample_obj.__dict__[spectra].__dict__.keys()) and (any(sample_obj.__dict__[spectra].bgpars)):
             dt = h5py.special_dtype(vlen=str) 
             bgpars = np.array([sample_obj.__dict__[spectra].bgpars[i].dumps() for i in range(len(sample_obj.__dict__[spectra].bgpars))], dtype=dt) 
-            experiment_group[spectra].create_dataset('bgpars', data=bgpars)
+            experiment_group[spectra]['bg'].attrs(bgpars)
 
 
         
@@ -115,50 +135,53 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
             experiment_group[spectra].create_dataset('fit_results',data = 'Not Specified')
 
 
-        lm_spec_attr = ('params','mod')
-        for attr in lm_spec_attr:
-            try:
-                data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__[attr].dumps()], dtype=dt) 
-                experiment_group[spectra].create_dataset(attr, data=data_temp)
-            except:
-                print(spectra,'couldnt save',attr)
-                experiment_group [spectra].create_dataset(attr,data = 'Not Specified')
+        # Model and model attributes
+        # Mod
+        try:
+            data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['mod'].dumps()], dtype=dt) 
+            experiment_group[spectra].create_dataset('mod', data=data_temp)
+        except:
+            print(spectra,'couldnt save','mod')
+            experiment_group[spectra].create_dataset('mod',data = 'Not Specified')
+            
+        #Params attribute
+        try:
+            data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['params'].dumps()], dtype=dt) 
+            experiment_group[spectra]['mod'].attrs['params'] = data_temp
+        except:
+            print(spectra,'couldnt save','params')
+            experiment_group[spectra]['mod'].attrs['params']= 'Not Specified'
 
-
-        # Attributes   
+        # Other Attributes   
         attributes = ('element_ctrl','orbital','pairlist','parent_sample','prefixlist')
         for attr in attributes:
             try:
-                experiment_group [spectra].attrs[attr] = sample_obj.__dict__[spectra].__dict__[attr]
+                experiment_group [spectra]['mod'].attrs[attr] = sample_obj.__dict__[spectra].__dict__[attr]
             except:
-                experiment_group [spectra].attrs[attr] = 'Not Specified'
-
-        # crop_info
-        experiment_group[spectra].attrs['bg_bounds'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][0])
-        experiment_group[spectra].attrs['bg_type'] = sample_obj.__dict__[spectra].__dict__['bg_info'][1]
-        if sample_obj.__dict__[spectra].__dict__['bg_info'][1] =='UT2':
-            experiment_group[spectra].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
+                experiment_group [spectra]['mod'].attrs[attr] = 'Not Specified'
 
 
         # thickness
         try:
             experiment_group[spectra].create_dataset('thickness', data = sample_obj.__dict__[spectra].thickness)
         except:
-            experiment_group[spectra].attrs['thickness'] = 'Not Specified'
+#             experiment_group[spectra].attrs['thickness'] = 'Not Specified'
             pass
         
         try:
             experiment_group[spectra].attrs['oxide_thickness'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness, default=dumper, indent=2)
         except:
-            experiment_group[spectra].attrs['oxide_thickness'] = 'Not Specified'
+            pass
+#             experiment_group[spectra].attrs['oxide_thickness'] = 'Not Specified'
         try:
             experiment_group[spectra].attrs['oxide_thickness_err'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness_err, default=dumper, indent=2)
         except:
-            experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
+#             experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
             pass     
         
 
     f.close()
+
 
 
 
@@ -232,7 +255,7 @@ def load_sample(filepath = None, experiment_name = None):
     sample_obj.data_path = f[experiment_name].attrs['data_path']
     sample_obj.element_scans = f[experiment_name].attrs['element_scans']
     sample_obj.sample_name = f[experiment_name].attrs['sample_name']
-    sample_obj.positions = f[experiment_name].attrs['positions']
+    # sample_obj.positions = f[experiment_name].attrs['positions']
     try:
         sample_obj.atomic_percent = json.loads(f[experiment_name].attrs['atomic_percent'])
     except:
@@ -264,22 +287,44 @@ def load_sample(filepath = None, experiment_name = None):
         sample_obj.__dict__[spec].spectra_name = sample_obj.sample_name
         # Datasets
         # E, I, esub, isub
-        sample_obj.__dict__[spec].E = f[experiment_name][spec]['E'][...]
-        sample_obj.__dict__[spec].I= f[experiment_name][spec]['I'][...]
-        sample_obj.__dict__[spec].esub = f[experiment_name][spec]['esub'][...]
-        sample_obj.__dict__[spec].isub = f[experiment_name][spec]['isub'][...]
-
+        for data in ['E','I','esub','isub']:
+            try:
+                sample_obj.__dict__[spec].__dict__[data] = f[experiment_name][spec][data][...]
+            except:
+                pass
+        # sample_obj.__dict__[spec].E = f[experiment_name][spec]['E'][...]
+        # sample_obj.__dict__[spec].I= f[experiment_name][spec]['I'][...]
+        # sample_obj.__dict__[spec].esub = f[experiment_name][spec]['esub'][...]
+        # sample_obj.__dict__[spec].isub = f[experiment_name][spec]['isub'][...]
+        try:
+            sample_obj.__dict__[spec].parent_sample = f[experiment_name][spec].attrs['parent_sample']
+        except:
+            pass
+        
+        
+        #Background Subtraction data and parameters
         # bg
-        sample_obj.__dict__[spec].bg = f[experiment_name][spec]['bg'][...]
-
+        try:
+            sample_obj.__dict__[spec].bg = f[experiment_name][spec]['bg'][...]
         # bgpars
-        if 'bgpars' in f[experiment_name][spec].keys():
-            p = lm.parameter.Parameters()
-            sample_obj.__dict__[spec].bgpars = [p.loads(f[experiment_name][spec]['bgpars'][...][i]) for i in range(len(f[experiment_name][spec]['bgpars'][...]))]
+            if 'bgpars' in f[experiment_name][spec]['bg'].attrs.keys():
+                p = lm.parameter.Parameters()
+                sample_obj.__dict__[spec].bgpars = [p.loads(f[experiment_name][spec]['bg'].attrs['bgpars'][...][i]) for i in range(len(f[experiment_name][spec]['bg'].attrs['bgpars']))]
+        except:
+            pass
+        # bg_info
+        try:
+            sample_obj.__dict__[spec].bg_info = sample_obj.bg_info[spec]
+        except:
+            pass
 
-
+            
+            
         # area 
-        sample_obj.__dict__[spec].area = f[experiment_name][spec]['area'][...]
+        try:
+            sample_obj.__dict__[spec].area = f[experiment_name][spec]['area'][...]
+        except:
+            pass
 
 
         # fit_results
@@ -292,21 +337,8 @@ def load_sample(filepath = None, experiment_name = None):
         except:
             pass
 
-        # fit_results_idx (I dont think I need this anymore, but will keep it for a bit just to be safe)
-        # try:
-        #     sample_obj.__dict__[spec].fit_results_idx = f[experiment_name][spec]['fit_results_idx'][...]
-        # except:
-        #     print('couldnt open fit_results_idx')
-        #     pass
 
-        # params
-        p = lm.parameter.Parameters()
-        try:
-            sample_obj.__dict__[spec].params = [p.loads(f[experiment_name][spec]['params'][...][i]) for i in range(len(f[experiment_name][spec]['params'][...]))][0]
-        except:
-            print('couldnt open params')
-            pass
-
+        
         # mod
         m = lm.model.Model(lambda x: x)
 #         sample_obj.__dict__[spec].mod = [m.loads(f[experiment_name][spec]['mod'][...][i]) for i in range(len(f[experiment_name][spec]['mod'][...]))]
@@ -314,11 +346,46 @@ def load_sample(filepath = None, experiment_name = None):
             sample_obj.__dict__[spec].mod = m.loads(f[experiment_name][spec]['mod'][...][0])
         except:
             print('couldnt open mod')
+            pass            
+        
+        # params
+        p = lm.parameter.Parameters()
+        try:
+            sample_obj.__dict__[spec].params = [p.loads(f[experiment_name][spec]['mod'].attrs['params'][i]) for i in range(len(f[experiment_name][spec]['mod'].attrs['params']))][0]
+        except:
+            print('couldnt open params')
+            pass
+        # Attributes
+        # element_ctrl
+        try:
+            sample_obj.__dict__[spec].element_ctrl = f[experiment_name][spec]['mod'].attrs['element_ctrl']
+        except:
+            pass
+        # orbital
+        try:
+            sample_obj.__dict__[spec].orbital = f[experiment_name][spec]['mod'].attrs['orbital']
+        except:
+            pass
+        # pairlist
+        try:
+            sample_obj.__dict__[spec].pairlist = f[experiment_name][spec]['mod'].attrs['pairlist']
+        except:
             pass
 
-        # BE_adjust
-        sample_obj.__dict__[spec].BE_adjust = f[experiment_name][spec]['BE_adjust']
+        # prefixlist
+        try:
+            sample_obj.__dict__[spec].prefixlist = list(f[experiment_name][spec]['mod'].attrs['prefixlist'])
+        except:
+            pass
 
+        
+        
+        
+        # BE_adjust
+        try:
+            sample_obj.__dict__[spec].BE_adjust = f[experiment_name][spec]['BE_adjust']
+        except:
+            pass
         
                 
 #         thickness
@@ -338,25 +405,6 @@ def load_sample(filepath = None, experiment_name = None):
         except:
             pass
         
-        
-        # Attributes
-        # element_ctrl
-        sample_obj.__dict__[spec].element_ctrl = f[experiment_name][spec].attrs['element_ctrl']
-
-        # orbital
-        sample_obj.__dict__[spec].orbital = f[experiment_name][spec].attrs['orbital']
-
-        # pairlist
-        sample_obj.__dict__[spec].pairlist = f[experiment_name][spec].attrs['pairlist']
-
-        # parent_sample
-        sample_obj.__dict__[spec].parent_sample = f[experiment_name].attrs['sample_name']
-
-        # prefixlist
-        sample_obj.__dict__[spec].prefixlist = list(f[experiment_name][spec].attrs['prefixlist'])
-
-        # bg_info
-        sample_obj.__dict__[spec].bg_info = sample_obj.bg_info[spec]
 
 
     f.close()
