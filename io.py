@@ -414,7 +414,10 @@ def load_sample(filepath = None, experiment_name = None):
     except:
         pass
 
-
+    if sample_obj.all_scans =='Not Specified':
+        print('All Scans not specified, please specify them first')
+        f.close()
+        return
 
     for spec in sample_obj.all_scans:
 
