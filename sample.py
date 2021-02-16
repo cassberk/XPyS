@@ -10,56 +10,15 @@ import matplotlib.pyplot as plt
 
 import xps_peakfit
 import xps_peakfit.spectra as sp
-# from xps_peakfit.spectra import spectra
+import xps_peakfit.config as cfg
 import xps_peakfit.VAMAS
-from ipywidgets.widgets import Checkbox, Button, Layout, HBox, VBox, Output, Text
 import os
-
-
-# def _buildsample(state, funcdefs=None):
-#     """Build sample from saved state.
-
-#     Intended for internal use only.
-
-#     """
-#     if len(state) != 3:
-#         raise ValueError("Cannot restore Model")
-#     known_funcs = {}
-#     for fname in lineshapes.functions:
-#         fcn = getattr(lineshapes, fname, None)
-#         if callable(fcn):
-#             known_funcs[fname] = fcn
-#     if funcdefs is not None:
-#         known_funcs.update(funcdefs)
-
-#     left, right, op = state
-#     if op is None and right is None:
-#         (fname, fcndef, name, prefix, ivars, pnames,
-#          phints, nan_policy, opts) = left
-#         if not callable(fcndef) and fname in known_funcs:
-#             fcndef = known_funcs[fname]
-
-#         if fcndef is None:
-#             raise ValueError("Cannot restore Model: model function not found")
-
-#         model = Model(fcndef, name=name, prefix=prefix,
-#                       independent_vars=ivars, param_names=pnames,
-#                       nan_policy=nan_policy, **opts)
-
-#         for name, hint in phints.items():
-#             model.set_param_hint(name, **hint)
-#         return model
-#     else:
-#         lmodel = _buildmodel(left, funcdefs=funcdefs)
-#         rmodel = _buildmodel(right, funcdefs=funcdefs)
-#         return CompositeModel(lmodel, rmodel, getattr(operator, op))
-
 
 
 
 class sample:
 
-    def __init__(self,dataload_obj = None ,bkgrd_subtraction_dict = None, data_dict_idx = None, overview = True, sputter_time = None, offval=0, plotflag = True, plotspan = False,\
+    def __init__(self,dataload_obj = None ,bkgrd_subtraction_dict = None, data_dict_idx = None, overview = True, sputter_time = None, offval=0, plotflag = True, plotspan = True,\
         plot_legend = None,normalize_subtraction = False,name = None,spectra_colors = None,load_derk = False, **kws):
         """Class for holding the spectra objects taken on a sample
 
@@ -111,16 +70,23 @@ class sample:
 
         """
         self.sample_name = name
-        self.bg_info = bkgrd_subtraction_dict
-        dfSF = pd.read_excel(r'~/code/xps_peakfit/Sensitivity_Factors.xlsx', keep_default_na = False)#Do this better
-
-        self.rsf = {dfSF['element'][dfSF['SF'] != ''].iloc[i] : dfSF['SF'][dfSF['SF'] != ''].iloc[i] for i in range(len(dfSF[dfSF['SF'] != '']))}
+        self.rsf = cfg.avantage_sensitivity_factors()
         self.offval = offval
         self.plotflag = plotflag
         self.plotspan = plotspan
         self.normalize_subtraction = normalize_subtraction
         self.plot_legend = plot_legend
         self.sputter_time = sputter_time
+        if bkgrd_subtraction_dict is None:
+            self.bg_info = cfg.bkgrd_subtraction
+        else:
+            self.bg_info = bkgrd_subtraction_dict
+
+        if spectra_colors is None:
+            self.spectra_colors = cfg.spectra_colors()
+        else:
+            self.spectra_colors = spectra_colors
+
 
         if load_derk ==True:
             self.load_derk_sample_object(dataload_obj)
@@ -131,16 +97,12 @@ class sample:
         elif (type(dataload_obj) == str) or (type(dataload_obj) == dict):
             self.load_experiment_sample_from_excel(dataload_obj,name)
 
-        if (spectra_colors is None) and (dataload_obj != None):
-            self.spectra_colors = {spectra:None for spectra in self.element_scans}
-        else:
-            self.spectra_colors = spectra_colors
+
 
         if dataload_obj is None:
             overview = False
         if overview:
-            # self.fig_dict, self.ax_dict = self.xps_overview()
-            self.xps_overview()
+            self.xps_overview(bkgrd_subtraction_dict = bkgrd_subtraction_dict, plotflag = plotflag, plotspan = plotspan)
 
 
     def load_experiment_sample_from_vamas(self,vamas_obj):
@@ -192,7 +154,7 @@ class sample:
 
 
     ####
-    def xps_overview(self):
+    def xps_overview(self,bkgrd_subtraction_dict = None, plotflag = True, plotspan = True):
         """Returns an overview of the spectra that are held in sample.
 
        The overview plots all of the raw signals, the background subtracted
@@ -245,7 +207,8 @@ class sample:
         :func: spectra.bg_sub()
         """        
         for spectra in self.element_scans:
-            self.__dict__[spectra].bg_sub()
+            if not spectra in ['XPS','Valence','vb','Survey']:
+                self.__dict__[spectra].bg_sub(crop_details = self.bg_info[spectra])
 
 
     def calc_atomic_percent(self, specify_spectra = None):
@@ -387,267 +350,3 @@ class sample:
 
         return fig, ax
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# """All of these use self.data dicitonary. I am going to try to migrate
-# away from this and store everything in .vms files and just use these objects
-# to hold the data
-# """
-
-    # ####
-    # def xps_overview(self,analyze = True):
-        
-    #     if analyze == True:
-
-    #         self.bksub_all(cropdic = self.bkgrd_sub_dict)
-    #         self.calc_total_area()
-
-    #     if self.plotflag == True:
-
-    #         save_figs_button = Button(description="Save Figures") 
-
-    #         saved_root_name = Text(
-    #             value=self.sample_name,
-    #             placeholder='Save filename',
-    #             disabled=False,
-    #             layout = Layout(width = '200px', margin = '0 5px 0 0')
-    #             )
-    #         save_figs_chkbxs = {init_fig: Checkbox(
-    #             value= False,
-    #             description=str(init_fig),
-    #             style = {'description_width': 'initial'},
-    #             disabled=False,
-    #             indent=False
-    #             ) for init_fig in ['Raw','Subtracted','Atomic Percent'] }
-
-    #         display( VBox( [saved_root_name,HBox( [HBox( list( save_figs_chkbxs[chks] for chks in save_figs_chkbxs.keys() ) ), save_figs_button] ) ] ) )
-    #         # out = Output()
-    #         # display(out)
-
-    #         fig_dict = {}
-    #         ax_dict = {}
-    #         fig_dict['Raw'], ax_dict['Raw']= self.plot_all_spectra(cropdic = self.bkgrd_sub_dict, offval = self.offval, plotspan = self.plotspan, saveflag=0,filepath = '',figdim=(15,10))
-    #         fig_dict['Subtracted'], ax_dict['Subtracted'] = self.plot_all_sub(cropdic = self.bkgrd_sub_dict)
-    #         fig_dict['Atomic Percent'], ax_dict['Atomic Percent'] = self.plot_atomic_percent()
-
-    #         @save_figs_button.on_click
-    #         def save_figs_on_click(b):
-    #             # with out:
-
-    #             if not os.path.exists(os.path.join(os.getcwd(),'figures')):
-    #                 os.makedirs(os.path.join(os.getcwd(),'figures'))
-
-    #             for figure in save_figs_chkbxs.keys():
-    #                 if save_figs_chkbxs[figure].value:
-
-    #                     save_location = os.path.join( os.getcwd(),'figures',saved_root_name.value  + '_' + str(figure) )     
-    #                     # print(save_location)     
-    #                     fig_dict[figure].savefig(save_location, bbox_inches='tight')
-
-
-
-    # #### Analysis Functions
-
-    # def bksub_all(self,cropdic = {}):
-    #     # print('subbing')
-    #     if not bool(cropdic):
-    #         print('No background subtraction dictionary defined')
-    #         return
-        
-    #     for spectra in self.element_scans:
-
-    #         self.data[spectra]['isub'] = dc([[] for k in range(len(self.data[spectra]['intensity']))])
-    #         self.data[spectra]['bkgd'] = dc([[] for k in range(len(self.data[spectra]['intensity']))])
-    #         self.data[spectra]['area'] = dc([[] for k in range(len(self.data[spectra]['intensity']))]) 
-    #         self.data[spectra]['params'] = dc([[] for k in range(len(self.data[spectra]['intensity']))])  
-    #         if cropdic[spectra][1] =='UT2':
-    #             self.data[spectra]['params'] = dc([[] for k in range(len(self.data[spectra]['intensity']))])  
-        
-    #         for i in range(len(self.data[spectra]['intensity'])):
-
-
-    #             self.data[spectra]['esub'], self.data[spectra]['isub'][i],\
-    #             self.data[spectra]['bkgd'][i],self.data[spectra]['params'][i],\
-    #             self.data[spectra]['area'][i] = \
-    #             xps_spec.bg_sub(self.__dict__[spectra],self.data[spectra]['energy'],self.data[spectra]['intensity'],i,cropdic[spectra])
-                
-    #             if self.normalize_subtraction == True:
-
-    #                 if self.data[spectra]['area'][i] > 1000:
-    #                     self.data[spectra]['isub'][i] = self.data[spectra]['isub'][i]/self.data[spectra]['area'][i]
-    #                     self.data[spectra]['bkgd'][i] = self.data[spectra]['bkgd'][i]/self.data[spectra]['area'][i]
-    #                 else:
-    #                     self.data[spectra]['isub'][i] = self.data[spectra]['isub'][i]/1e6
-    #                     self.data[spectra]['bkgd'][i] = self.data[spectra]['bkgd'][i]/1e6
-                        
-    # def calc_total_area(self):
-        
-    #     cycles = len(self.data[list(self.data.keys())[0]]['intensity'])
-
-    #     self.data['total area'] = [[] for k in range(cycles)]
-
-    #     for i in range(cycles):
-    #         tota = 0
-
-    #         for spectra in self.element_scans:
-                    
-    #             tota += np.abs(self.data[spectra]['area'][i])/self.rsf[spectra]
-
-    #         self.data['total area'][i] = dc(tota)
-            
-
-
-    #     for spectra in self.element_scans:
-
-    #         self.data[spectra]['atperc'] = np.empty(cycles)
-            
-    #         for i in range(cycles):  
-                                    
-    #             self.data[spectra]['atperc'][i] = (np.abs(self.data[spectra]['area'][i])/self.rsf[spectra])/self.data['total area'][i] 
-                    
-
-
-
-
-
-
-
-
-
-
-    # ### Plotting functions
-    # def plot_all_spectra(self, cropdic,offval=0, plotspan=False, saveflag=0,filepath = '',figdim = (15,40)):
-
-    #     fig,ax = plt.subplots(int(np.ceil((len(self.element_scans)+2)/3)) ,3, figsize = figdim)
-    #     ax = ax.ravel()
-    #     # print(len(ax))
-    #     iter = 0
-    #     for spectra in self.data.keys():
-
-    #         if spectra not in ('total area'):
-
-    #             for i in range(len(self.data[spectra]['intensity'])):
-    #                 ax[iter].plot(self.data[spectra]['energy'],self.data[spectra]['intensity'][i]+i*offval,label = spectra)
-
-    #             ax[iter].set_title(spectra,fontsize=24)
-    #             ax[iter].set_xlim(max(self.data[spectra]['energy']),min(self.data[spectra]['energy']))
-    #             ax[iter].set_xlabel('Binding Energy (eV)',fontsize = 20)
-    #             ax[iter].set_ylabel('Counts/s',fontsize = 20)
-
-    #             ax[iter].tick_params(labelsize=16)
-    #             ax[iter].tick_params(labelsize=16)
-
-    #             if plotspan==True:
-    #                 if cropdic[spectra][1] == 'shirley':
-    #                     ax[iter].axvspan( np.min(cropdic[spectra][0]), np.max(cropdic[spectra][0]) , alpha=0.1, color='orange')
-    #                 elif cropdic[spectra][1] == 'linear':
-    #                     ax[iter].axvspan( np.min(cropdic[spectra][0]), np.max(cropdic[spectra][0]) , alpha=0.1, color='green')
-    #                 elif cropdic[spectra][1] == 'UT2':
-    #                     ax[iter].axvspan( np.min(cropdic[spectra][0]), np.max(cropdic[spectra][0]) , alpha=0.1, color='blue')
-    #             iter+=1
-
-
-    #     fig.tight_layout(pad=2)
-
-
-    #     if saveflag ==True:
-    #         plt.savefig(filepath,bbox_inches = "tight")
-        
-    #     return fig, ax
-            
-            
-            
-    # def plot_all_sub(self,cropdic = {}, offval=0):
-
-    #     if not bool(cropdic):
-    #         print('No background subtraction dictionary defined')
-    #         return
-
-
-    #     fig,ax = plt.subplots(int(np.ceil(len(self.element_scans)/2)) ,2, figsize = (15,15))
-    #     ax = ax.ravel()
-
-
-    #     fit_legend = dc(self.data['C1s']['pos names'])
-
-    #     iter = 0
-    #     for spectra in self.element_scans:
-
-    #         en = self.data[spectra]['esub']
-
-    #         for i in range(len(self.data[spectra]['intensity'])):
-                
-    #             ax[iter].plot(self.data[spectra]['esub'],self.data[spectra]['isub'][i] + offval*i,label = spectra)
-
-
-    #         ax[iter].set_title(spectra,fontsize=24)
-    #         ax[iter].set_xlim(max(self.data[spectra]['esub']),min(self.data[spectra]['esub']))
-    #         if self.normalize_subtraction ==True:
-    #             ax[iter].set_ylim(-0.05,(np.ceil(np.max([np.max(self.data[spectra]['isub'][i]) for i in range(len(self.data[spectra]['isub']))\
-    #                            if np.max(self.data[spectra]['isub'][i]) <1])*10))/10)
-
-    #         ax[iter].set_xlabel('Binding Energy (eV)',fontsize = 20)
-    #         ax[iter].set_ylabel('Counts/s',fontsize = 20)
-
-    #         ax[iter].tick_params(labelsize=16)
-    #         ax[iter].tick_params(labelsize=16)
-
-    #         if cropdic[spectra][1] == 'shirley':
-    #             ax[iter].axvspan( np.min(cropdic[spectra][0]), np.max(cropdic[spectra][0]) , alpha=0.1, color='orange')
-    #         elif cropdic[spectra][1] == 'linear':
-    #             ax[iter].axvspan( np.min(cropdic[spectra][0]), np.max(cropdic[spectra][0]) , alpha=0.1, color='green')
-    #         elif cropdic[spectra][1] == 'UT2':
-    #             ax[iter].axvspan( np.min(cropdic[spectra][0]), np.max(cropdic[spectra][0]) , alpha=0.1, color='blue')
-
-    #         iter+=1
-
-    #     fig.legend(fit_legend,loc='center left', bbox_to_anchor=(1.0, 0.5),fontsize=20)
-
-    #     fig.tight_layout()
-    #     return fig, ax
-
-
-
-    # def plot_atomic_percent(self):
-        
-    #     leglist = []
-    #     fig, ax = plt.subplots(figsize = (12,8))
-
-    #     x = np.arange(len(self.data['C1s']['atperc']))
-
-    #     for spectra in self.element_scans:
-    #         ax.plot(x,self.data[spectra]['atperc']*100)
-    #         leglist.append(spectra)
-
-
-    #     # ax.title(sample,fontsize = 24)
-    #     ax.set_xlabel('Position',fontsize = 30)
-    #     ax.set_ylabel('Atomic Percent',fontsize = 30)
-
-    #     ax.tick_params(labelsize=30)
-    #     ax.tick_params(labelsize=30)
-
-    #     ax.set_xticks(x)
-    #     ax.set_ylim(ymin = 0)
-    #     if 'pos names' in self.data['C1s']:
-    #         ax.set_xticklabels(self.data['C1s']['pos names'],rotation = 80);
-    #     ax.legend(leglist,bbox_to_anchor=(0.85, 0.4, 0.5, 0.5), loc='lower center',fontsize = 20)
-        
-    #     return fig, ax

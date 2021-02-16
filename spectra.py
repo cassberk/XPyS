@@ -14,17 +14,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm_notebook as tqdm
 import pickle
 import lmfit as lm
-# from lmfit.model import load_model
 
 import sys
-# sys.path.append("/Volumes/GoogleDrive/My Drive/XPS/XPS_Library")
 import xps_peakfit
-# from xps.io import loadmodel
 from xps_peakfit import bkgrds as backsub
-# from xps import bkgrds as background_sub
 from xps_peakfit.helper_functions import *
 from xps_peakfit.gui_element_dicts import *
-# from xps_peakfit.auto_fitting import *
 
 import xps_peakfit.VAMAS
 import xps_peakfit.autofit.autofit
@@ -126,7 +121,7 @@ class spectra:
         
     def bg_sub(self,crop_details=None,idx = None,UT2_params = None):
 
-
+        print(self.orbital)
         if not crop_details == None:
             self.bg_info = crop_details
 

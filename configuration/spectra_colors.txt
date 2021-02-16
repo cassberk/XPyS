@@ -1,0 +1,12 @@
+Al2p darkred
+O1s blue
+C1s teal
+N1s red
+F1s green
+Mo3d silver
+Si2p purple
+Nb3d orange
+vb gray
+survey black
+Valence gray
+Survey black
