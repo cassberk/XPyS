@@ -17,16 +17,13 @@ import matplotlib.cm as cm
 from tqdm import tqdm_notebook as tqdm
 import pickle
 import lmfit as lm
-# from lmfit.model import load_model
 
 import sys
 import xps_peakfit
 from xps_peakfit import bkgrds as backsub
-# from xps import bkgrds as background_sub
 from xps_peakfit.helper_functions import *
 from xps_peakfit.gui_element_dicts import *
-# from xps_peakfit.auto_fitting import *
-
+import xps_peakfit.config as cfg
 import xps_peakfit.VAMAS
 import xps_peakfit.autofit.autofit
 import os
@@ -45,67 +42,85 @@ class SonnySpectra:
 
     def load_spectra_objs(self,data_paths,spectra_name,exclude_list = []):
 
-        if type(data_paths) == str:
-            datadict = {}
-            f = open(data_paths, "r")
-            for line in f.readlines():
-                # print()
-                if line.split(',')[0].split('/')[-3] not in exclude_list:
-                    datadict[line.split(',')[0].split('/')[-3]] = xps_peakfit.io.load_spectra(filepath = line.split(',')[0],experiment_name = line.split(',')[1].split('\n')[0],spec = spectra_name)
-            f.close()
-        elif type(data_paths) == list:
-            datadict = {}
-            for file in data_paths:
-                if file.split('/')[-1] not in exclude_list:
-                    f = h5py.File(os.path.join(file,'XPS','XPS_'+file.split('/')[-1]+'.hdf5'),'r+')
-                    exps = [k for k in f.keys()]
-                    print(file.split('/')[-1],exps[0])
-                    datadict[file.split('/')[-1]] = xps_peakfit.io.load_spectra(filepath = os.path.join(file,'XPS','XPS_'+file.split('/')[-1]+'.hdf5'),experiment_name = exps[0],spec = spectra_name)
-                    f.close()
+        datadict = {}
+        for file in data_paths:
+            if not any([exclude in file for exclude in exclude_list]):
+                fpath = os.path.join(cfg.datarepo['stoqd'],file)
+                f = h5py.File(fpath,'r')
+                exps = [k for k in f.keys()]
+                print(file.split('/')[-1],exps[0])
+                datadict[file.split('/')[-1].split('.')[0]] = xps_peakfit.io.load_spectra(filepath = fpath,experiment_name = exps[0],spec = spectra_name)
+                f.close()
 
         self.spectra_objects = datadict
 
-    def build_spectra_matrix(self,spectra_dict=None,new_bg_sub = False,target = False,targetname = 'target'):
+    def bgsuball(self,subpars):
+        for sample in self.spectra_objects:
+            sample.bg_sub(crop_details=subpars)
+
+    def build_spectra_matrix(self,emin,emax,spectra_type = 'raw',subpars = None):
+
+        if spectra_type == 'sub':
+            self.bgsuball(subpars = subpars)
+            for name,obj in self.spectra_objects.items():
+                try:
+                    spectra = np.append(spectra,obj.isub,axis = 0)
+                except:
+                    spectra = obj.isub
+
+        elif spectra_type =='raw':
+
+            for name,obj in self.spectra_objects.items():
+
+                if spectra_type == 'raw':
+                    Ei = sorted([index_of(obj.E,emin), index_of(obj.E,emax)])
+                    print(name, len(obj.E[Ei[0]:Ei[1]]))
+                    energy = obj.E[Ei[0]:Ei[1]]
+                    try:
+                        spectra = np.append(spectra,obj.I[:,Ei[0]:Ei[1]],axis = 0)
+                    except:
+                        spectra = obj.I[:,Ei[0]:Ei[1]]
+
+        self.energy = energy
+        self.spectra = spectra
+        self._spectra = spectra
+
+    def build_dataframe(self,spectra_dict=None,target = None,targetname = 'target',include_fit_params = True, spectra_type = 'sub'):
         
         self.targetname = targetname
         if spectra_dict is None:
             spectra_dict = self.spectra_objects
 
             
-        sample_list = []
         i = 0
         for sample in self.spectra_objects.items():
 
             print(sample[0],sample[1])
-            sample_list.append(sample[0])
             
-            if new_bg_sub:
-                sample[1].bg_sub(crop_details=new_bg_sub)
+            if include_fit_params:
+                dd = {key: [sample[1].fit_results[i].params.valuesdict()[key] \
+                            for i in range(len( sample[1].fit_results))] \
+                    for key in  sample[1].fit_results[0].params.valuesdict().keys()}       
 
-            dd = {key: [sample[1].fit_results[i].params.valuesdict()[key] \
-                        for i in range(len( sample[1].fit_results))] \
-                for key in  sample[1].fit_results[0].params.valuesdict().keys()}       
-
-            dftemp = pd.DataFrame(dd)
-            dftemp['sample'] = [sample[0]]*len(sample[1].fit_results)
-            if target:
-                dftemp[self.targetname] = [target[sample[0]]]*len(sample[1].fit_results)
+                dftemp = pd.DataFrame(dd)
+                dftemp['sample'] = [sample[0]]*len(sample[1].fit_results)
+            if target != None:
+                if type(target) == dict:
+                    dftemp[self.targetname] = [target[sample[0]]]*len(sample[1].fit_results)
             
-            if i ==0:
-                y = np.array(sample[1].isub)
-                x = np.array(sample[1].esub)
-                param_df = dftemp
-                i+=1
-            else:
-                y = np.append(y,np.array(sample[1].isub),axis = 0)
+            try:
                 param_df = param_df.append(dftemp)
+                print('try',i)
                 i+=1
+            except:
+                param_df = dftemp
+                print('except',i)
+                i+=1
+
             clear_output(wait = True)
 
             
-        self.energy = x
-        self.spectra = y
-        self._spectra = y
+
         # self.df_spectra = pd.DataFrame(self.spectra,columns = self.energy)
         self.df_params = param_df.reset_index(drop = True)
         self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
@@ -133,13 +148,11 @@ class SonnySpectra:
             plt.plot(self.energy,self.spectra.mean(axis=0))
 
     def update_info(self,message):
-
         if self.info != []:
             if self.info[-1] == message:
                 return
             else:
                 self.info.append(message)
-
         else:
             self.info.append(message)
 
@@ -161,8 +174,8 @@ class SonnySpectra:
             plt.plot(self.peaktrack,'o-')
 
 
-    def pad_or_truncate(self,some_list, target_len):
-        return [0]*(target_len - len(some_list)) + list(some_list)
+    def pad_or_truncate(self,some_list, desired_len):
+        return [0]*(desired_len - len(some_list)) + list(some_list)
 
 
     def align_peaks(self,peak_pos,energy=None,spec_set = None,plotflag = True):
@@ -276,7 +289,7 @@ class SonnySpectra:
         ax2.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
         fig.tight_layout()
 
-    def plotpca3D(self,X,Y,Z,label = 'samples'):
+    def plotpca3D(self,X='P1', Y='P2', Z='P3', label = 'samples'):
         fig = plt.figure(figsize = (20,8))
         ax = fig.add_subplot(1, 2, 1, projection='3d')
         
