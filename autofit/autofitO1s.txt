@@ -1,0 +1,2 @@
+O1_amplitude lin 530.7 1.444 666.911
+O2_amplitude lin 532.4 1.84 10820.404

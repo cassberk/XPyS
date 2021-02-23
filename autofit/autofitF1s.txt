@@ -1,0 +1,2 @@
+F1_amplitude lin 684.8 2.057 -875.221
+F2_amplitude lin 686.9 2.452 -1896.868
