@@ -46,12 +46,12 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
 
 
 
-    exp_attr = ('data_path','element_scans','all_scans','sample_name','positions')
-    for attr in exp_attr:
-        try:
-            experiment_group.attrs[attr] = sample_obj.__dict__[attr]
-        except:
-            experiment_group.attrs[attr] = 'Not Specified'
+    # exp_attr = ('data_path','element_scans','all_scans','sample_name','positions')
+    # for attr in exp_attr:
+    #     try:
+    #         experiment_group.attrs[attr] = sample_obj.__dict__[attr]
+    #     except:
+    #         experiment_group.attrs[attr] = 'Not Specified'
 
     # total_area
     try:
@@ -79,52 +79,86 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         print('couldnt atomic_percent on sample obj')
         pass
 
-    # for spectra in sample_obj.element_scans:
-    #     save_spectra(sample_obj = sample_obj,filepath = filepath, experiment_name = experiment_name,\
-    #         force = force,specify_spectra = sample_obj.element_scans)
+    f.close()
+
     for spectra in sample_obj.element_scans:
+        save_spectra_analysis(sample_obj.__dict__[spectra],filepath = filepath,experiment_name = experiment_name,force = force)
 
-         # Create a new spectra group that contains all the spectra and analysis
-        experiment_group.require_group(spectra)
-        try:
-            experiment_group[spectra].attrs['parent_sample'] = sample_obj.__dict__[spectra].__dict__['parent_sample']
-        except:
-            print('couldnt parent sample')
-            experiment_group[spectra].attrs['parent_sample'] = 'Not Specified'
+     
 
+## Need to work on this since it is not necessary to save all the info each time
+def save_spectra_analysis(spectra_obj,filepath = None, experiment_name = None,force = False):
+
+    if experiment_name == None:
+        print('Must Name the experiment')
+        return
+
+    # if sample_obj.sample_name == None:
+    #     print('You must name the sample')
+    #     return
+
+    if not hasattr(spectra_obj,'orbital'):
+        raise NameError('You must assign an orbital attribute to the spectra object as a string. Ex: "O1s"')
+    
+    spectra = spectra_obj.orbital
+
+    with h5py.File(filepath,'r+') as f:
+        f[experiment_name][spectra]
+        datasets_NS = [f[experiment_name][spectra][d].name for d in f[experiment_name][spectra].keys() if str(f[experiment_name][spectra][d][...]) =='Not Specified']
+        dataset_exist = [f[experiment_name][spectra][d].name for d in f[experiment_name][spectra].keys()]
+
+        if force == False:
+            if any(['fit_results' in ds for ds in dataset_exist]):
+                if not any(['fit_results' in ds for ds in datasets_NS]):
+                    raise AttributeError('There are currently fit_results saved, use force to overwrite them')
+                elif any(['fit_results' in ds for ds in datasets_NS]):
+                    del f[experiment_name][spectra]['fit_results']  
+                    
+
+        if force == True:
+            for dset in ['fit_results','mod','isub','esub','area','bg','thickness','atomic_percent']:
+                if hasattr(spectra_obj,dset):
+                    if any([dset in ds for ds in dataset_exist]):
+                        # print(dset)
+                        del f[experiment_name][spectra][dset]
+
+    with h5py.File(filepath,'r+') as f:
 
         ##################################
         # Datasets
-        dsets = ('E','I','esub','isub','area','BE_adjust')
+        dsets = ('esub','isub','area','BE_adjust','atomic_percent')
         
         for data in dsets:
             try:
-                experiment_group[spectra][data] = sample_obj.__dict__[spectra].__dict__[data]
+                # if hasattr(spectra_obj,data):
+                #     del f[experiment_name][spectra][data]
+                f[experiment_name][spectra][data] = spectra_obj.__dict__[data]
             except:
                 print('couldnt',data)
-                experiment_group[spectra][data] = 'Not Specified'
+    #                 f[experiment_name][spectra][data] = 'Not Specified'
             
         ##################################     
         # Background subtraction
         try:
-            experiment_group[spectra]['bg'] = sample_obj.__dict__[spectra].__dict__['bg']
+            f[experiment_name][spectra]['bg'] = spectra_obj.__dict__['bg']
         except:
             print('couldnt bg')
-            experiment_group[spectra]['bg'] = 'Not Specified'
+            # f[experiment_name][spectra]['bg'] = 'Not Specified'
+            pass
         # crop_info
         try:
-            experiment_group[spectra]['bg'].attrs['bg_bounds'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][0])
-            experiment_group[spectra]['bg'].attrs['bg_type'] = sample_obj.__dict__[spectra].__dict__['bg_info'][1]
-            if sample_obj.__dict__[spectra].__dict__['bg_info'][1] =='UT2':
-                experiment_group[spectra]['bg'].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
+            f[experiment_name][spectra]['bg'].attrs['bg_bounds'] = np.asarray(spectra_obj.__dict__['bg_info'][0])
+            f[experiment_name][spectra]['bg'].attrs['bg_type'] = spectra_obj.__dict__['bg_info'][1]
+            if spectra_obj.__dict__['bg_info'][1] =='UT2':
+                f[experiment_name][spectra]['bg'].attrs['bg_starting_pars'] = np.asarray(spectra_obj.__dict__['bg_info'][2])
         except:
             pass
 
         # bgpars
-        if ('bgpars' in sample_obj.__dict__[spectra].__dict__.keys()) and (any(sample_obj.__dict__[spectra].bgpars)):
+        if ('bgpars' in spectra_obj.__dict__.keys()) and (any(spectra_obj.bgpars)):
             dt = h5py.special_dtype(vlen=str) 
-            bgpars = np.array([sample_obj.__dict__[spectra].bgpars[i].dumps() for i in range(len(sample_obj.__dict__[spectra].bgpars))], dtype=dt) 
-            experiment_group[spectra]['bg'].attrs['bgpars'] = bgpars
+            bgpars = np.array([spectra_obj.bgpars[i].dumps() for i in range(len(spectra_obj.bgpars))], dtype=dt) 
+            f[experiment_name][spectra]['bg'].attrs['bgpars'] = bgpars
 
         ##################################
         # Fit Results
@@ -132,189 +166,62 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         # the lmfit objects are serialied info JSON format and stored as a string array in hdf5
         dt = h5py.special_dtype(vlen=str) 
         try:
-            data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['fit_results'][i].dumps()\
-                    for i in range(len(sample_obj.__dict__[spectra].__dict__['fit_results']))], dtype=dt) 
-            experiment_group[spectra].create_dataset('fit_results', data=data_temp)
+            data_temp = np.asarray([spectra_obj.__dict__['fit_results'][i].dumps()\
+                    for i in range(len(spectra_obj.__dict__['fit_results']))], dtype=dt) 
+            f[experiment_name][spectra].create_dataset('fit_results', data=data_temp)
         except:
             print('couldnt fit results')
-            experiment_group[spectra].create_dataset('fit_results',data = 'Not Specified')
+            f[experiment_name][spectra].create_dataset('fit_results',data = 'Not Specified')
 
         ##################################
         # Model and model attributes
         # Mod
         try:
-            data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['mod'].dumps()], dtype=dt) 
-            experiment_group[spectra].create_dataset('mod', data=data_temp)
+            data_temp = np.asarray([spectra_obj.__dict__['mod'].dumps()], dtype=dt) 
+            f[experiment_name][spectra].create_dataset('mod', data=data_temp)
         except:
             print(spectra,'couldnt save','mod')
-            experiment_group[spectra].create_dataset('mod',data = 'Not Specified')
+            f[experiment_name][spectra].create_dataset('mod',data = 'Not Specified')
             
         #Params attribute
         try:
-            data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['params'].dumps()], dtype=dt) 
-            experiment_group[spectra]['mod'].attrs['params'] = data_temp
+            data_temp = np.asarray([spectra_obj.__dict__['params'].dumps()], dtype=dt) 
+            f[experiment_name][spectra]['mod'].attrs['params'] = data_temp
         except:
             print(spectra,'couldnt save','params')
-            experiment_group[spectra]['mod'].attrs['params']= 'Not Specified'
+            f[experiment_name][spectra]['mod'].attrs['params']= 'Not Specified'
 
         # Other Attributes   
         attributes = ('element_ctrl','orbital','pairlist','parent_sample','prefixlist')
         for attr in attributes:
             try:
-                experiment_group [spectra]['mod'].attrs[attr] = sample_obj.__dict__[spectra].__dict__[attr]
+                f[experiment_name][spectra]['mod'].attrs[attr] = spectra_obj.__dict__[attr]
             except:
                 print('couldnt',attr)
-                experiment_group[spectra]['mod'].attrs[attr] = 'Not Specified'
+                f[experiment_name][spectra]['mod'].attrs[attr] = 'Not Specified'
 
         ##################################
         # thickness
         try:
-            experiment_group[spectra].create_dataset('thickness', data = sample_obj.__dict__[spectra].thickness)
+            f[experiment_name][spectra].create_dataset('thickness', data = spectra_obj.thickness)
         except:
-#             experiment_group[spectra].attrs['thickness'] = 'Not Specified'
+            print('couldnt thickness')
+    #             experiment_group[spectra].attrs['thickness'] = 'Not Specified'
             pass
         
         try:
-            experiment_group[spectra].attrs['oxide_thickness'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness, default=dumper, indent=2)
+            f[experiment_name][spectra]['thickness'].attrs['oxide_thickness'] = json.dumps(spectra_obj.oxide_thickness, default=dumper, indent=2)
         except:
+            print('couldnt oxide thickness')
             pass
-#             experiment_group[spectra].attrs['oxide_thickness'] = 'Not Specified'
+    #             experiment_group[spectra].attrs['oxide_thickness'] = 'Not Specified'
         try:
-            experiment_group[spectra].attrs['oxide_thickness_err'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness_err, default=dumper, indent=2)
+            f[experiment_name][spectra]['thickness'].attrs['oxide_thickness_err'] = json.dumps(spectra_obj.oxide_thickness_err, default=dumper, indent=2)
         except:
-#             experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
+    #             experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
             pass     
 
-    f.close()
-
-
-# def save_spectra(sample_obj,filepath = None, experiment_name = None,force = False,specify_spectra = None):
-
-#     if experiment_name == None:
-#         print('Must Name the experiment')
-#         return
-#     if specify_spectra == None:
-#         print('Must specify the spectra')
-#         return
-    
-#     f = h5py.File(filepath,'r+')
-#     experiment_group = f[experiment_name]
-
-#     if any([spec in f[experiment_name].keys() for spec in specify_spectra]) and force == False:
-
-#         print('Spectra',[spec for spec in specify_spectra if spec in f[experiment_name].keys()],'already exist in',experiment_name,\
-#             ' Set force = True to delete spectra and save a new one or save the individual attribute you are interested in')
-#         f.close()
-#         return
-
-#     elif any([spec in f[experiment_name].keys() for spec in specify_spectra]) and force == True:
-#         for spectra in specify_spectra:
-#             del f[experiment_name][spectra]
-
-#     for spectra in specify_spectra:
-
-#          # Create a new spectra group that contains all the spectra and analysis
-#         experiment_group.require_group(spectra)
-#         try:
-#             experiment_group[spectra].attrs['parent_sample'] = sample_obj.__dict__[spectra].__dict__['parent_sample']
-#         except:
-#             print('couldnt parent sample')
-#             experiment_group[spectra].attrs['parent_sample'] = 'Not Specified'
-
-
-#         ##################################
-#         # Datasets
-#         dsets = ('E','I','esub','isub','area','BE_adjust')
-        
-#         for data in dsets:
-#             try:
-#                 experiment_group[spectra][data] = sample_obj.__dict__[spectra].__dict__[data]
-#             except:
-#                 print('couldnt',data)
-#                 experiment_group[spectra][data] = 'Not Specified'
-            
-#         ##################################     
-#         # Background subtraction
-#         try:
-#             experiment_group[spectra]['bg'] = sample_obj.__dict__[spectra].__dict__['bg']
-#         except:
-#             print('couldnt bg')
-#             experiment_group[spectra]['bg'] = 'Not Specified'
-#         # crop_info
-#         try:
-#             experiment_group[spectra]['bg'].attrs['bg_bounds'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][0])
-#             experiment_group[spectra]['bg'].attrs['bg_type'] = sample_obj.__dict__[spectra].__dict__['bg_info'][1]
-#             if sample_obj.__dict__[spectra].__dict__['bg_info'][1] =='UT2':
-#                 experiment_group[spectra]['bg'].attrs['bg_starting_pars'] = np.asarray(sample_obj.__dict__[spectra].__dict__['bg_info'][2])
-#         except:
-#             pass
-
-#         # bgpars
-#         if ('bgpars' in sample_obj.__dict__[spectra].__dict__.keys()) and (any(sample_obj.__dict__[spectra].bgpars)):
-#             dt = h5py.special_dtype(vlen=str) 
-#             bgpars = np.array([sample_obj.__dict__[spectra].bgpars[i].dumps() for i in range(len(sample_obj.__dict__[spectra].bgpars))], dtype=dt) 
-#             experiment_group[spectra]['bg'].attrs['bgpars'] = bgpars
-
-#         ##################################
-#         # Fit Results
-#         # save lmfit spectra attributes as datasets using the lmfit method .dumps() which is a wrapper for json.dumps
-#         # the lmfit objects are serialied info JSON format and stored as a string array in hdf5
-#         dt = h5py.special_dtype(vlen=str) 
-#         try:
-#             data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['fit_results'][i].dumps()\
-#                     for i in range(len(sample_obj.__dict__[spectra].__dict__['fit_results']))], dtype=dt) 
-#             experiment_group[spectra].create_dataset('fit_results', data=data_temp)
-#         except:
-#             print('couldnt fit results')
-#             experiment_group[spectra].create_dataset('fit_results',data = 'Not Specified')
-
-#         ##################################
-#         # Model and model attributes
-#         # Mod
-#         try:
-#             data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['mod'].dumps()], dtype=dt) 
-#             experiment_group[spectra].create_dataset('mod', data=data_temp)
-#         except:
-#             print(spectra,'couldnt save','mod')
-#             experiment_group[spectra].create_dataset('mod',data = 'Not Specified')
-            
-#         #Params attribute
-#         try:
-#             data_temp = np.asarray([sample_obj.__dict__[spectra].__dict__['params'].dumps()], dtype=dt) 
-#             experiment_group[spectra]['mod'].attrs['params'] = data_temp
-#         except:
-#             print(spectra,'couldnt save','params')
-#             experiment_group[spectra]['mod'].attrs['params']= 'Not Specified'
-
-#         # Other Attributes   
-#         attributes = ('element_ctrl','orbital','pairlist','parent_sample','prefixlist')
-#         for attr in attributes:
-#             try:
-#                 experiment_group [spectra]['mod'].attrs[attr] = sample_obj.__dict__[spectra].__dict__[attr]
-#             except:
-#                 print('couldnt',attr)
-#                 experiment_group[spectra]['mod'].attrs[attr] = 'Not Specified'
-
-#         ##################################
-#         # thickness
-#         try:
-#             experiment_group[spectra].create_dataset('thickness', data = sample_obj.__dict__[spectra].thickness)
-#         except:
-# #             experiment_group[spectra].attrs['thickness'] = 'Not Specified'
-#             pass
-        
-#         try:
-#             experiment_group[spectra].attrs['oxide_thickness'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness, default=dumper, indent=2)
-#         except:
-#             pass
-# #             experiment_group[spectra].attrs['oxide_thickness'] = 'Not Specified'
-#         try:
-#             experiment_group[spectra].attrs['oxide_thickness_err'] = json.dumps(sample_obj.__dict__[spectra].oxide_thickness_err, default=dumper, indent=2)
-#         except:
-# #             experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
-#             pass     
-        
-#     f.close()
+    # f.close()
 
 
 
@@ -383,13 +290,18 @@ def write_vamas_to_hdf5(vamas_obj, hdf5file):
 def load_sample(filepath = None, experiment_name = None):
 
     sample_obj = xps_peakfit.sample.sample(overview=False)
+    sample_obj.load_path = filepath
+    sample_obj.experiment_name = experiment_name
 
     f= h5py.File(filepath,"r")
+
+
 
     exp_attr = ('data_path','element_scans','all_scans','sample_name','positions')
     for attr in exp_attr:
         try:
             sample_obj.__dict__[attr] = f[experiment_name].attrs[attr]
+            print(sample_obj.__dict__[attr])
         except:
             pass
 
@@ -414,10 +326,10 @@ def load_sample(filepath = None, experiment_name = None):
     except:
         pass
 
-    if sample_obj.all_scans =='Not Specified':
-        print('All Scans not specified, please specify them first')
-        f.close()
-        return
+    # if sample_obj.all_scans =='Not Specified':
+    #     print('All Scans not specified, please specify them first')
+    #     f.close()
+    #     return
 
     for spec in sample_obj.all_scans:
 
@@ -426,7 +338,7 @@ def load_sample(filepath = None, experiment_name = None):
         # that contains all the spectra and analysis
         sample_obj.__dict__[spec] = load_spectra(filepath = filepath, experiment_name = experiment_name,spec = spec)
         sample_obj.__dict__[spec].spectra_name = sample_obj.sample_name
-
+        # sample_obj.__dict__[spec].atomic_percent = sample_obj.atomic_percent[spec]
     f.close()
 
     return sample_obj
@@ -439,9 +351,12 @@ def load_sample(filepath = None, experiment_name = None):
 def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 = False):
 
     spectra_obj = xps_peakfit.spectra.spectra(spectra_name = spec)
+    spectra_obj.load_path = filepath
+    spectra_obj.experiment_name = experiment_name
+
     # if openhdf5 == False:
     f= h5py.File(filepath,"r")
-
+    spectra_obj.comments = f[experiment_name][spec].attrs['DS_EXT_SUPROPID_COMMENTS']
     ##################################
     # Datasets
     for data in ['E','I','esub','isub','area']:
@@ -547,12 +462,20 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
         spectra_obj.oxide_thickness = {oxide:np.array(tempdict[oxide]) for oxide in tempdict.keys()}
     except:
         pass     
-    
     try:
         spectra_obj.oxide_thickness_err = json.loads(f[experiment_name][spec].attrs['oxide_thickness_err'])
     except:
         pass
-    
+    #I changed up where oxide thickness is stored, so until i fix it for all samples I have to do this...
+    try:
+        tempdict = json.loads(f[experiment_name][spec]['thickness'].attrs['oxide_thickness'])
+        spectra_obj.oxide_thickness = {oxide:np.array(tempdict[oxide]) for oxide in tempdict.keys()}
+    except:
+        pass     
+    try:
+        spectra_obj.oxide_thickness_err = json.loads(f[experiment_name][spec]['thickness'].attrs['oxide_thickness_err'])
+    except:
+        pass    
     
 
     # if openhdf5 ==False:
