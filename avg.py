@@ -147,7 +147,7 @@ def read_avg(filepath):
                 
 
                
-def avg_to_hdf5(sample_name,experiment_name,filepath = None,force = False):
+def avg_to_hdf5(sample_name,experiment_name,filepath = None,savepath=None,force = False):
     
     if filepath == None:
         filelist = glob.glob(os.getcwd()+'/*')
@@ -156,12 +156,18 @@ def avg_to_hdf5(sample_name,experiment_name,filepath = None,force = False):
     elif type(filepath) == str:
         filelist = glob.glob(filepath+'/*')
 
+    if savepath == None:
+        save_location = '/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5')
+    else:
+        save_location = savepath
+
     if force == False:
-        hdf = h5py.File('/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5'),'a')
+        hdf = h5py.File(save_location,'a')
     elif force == True:
-        hdf = h5py.File('/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5'),'w')
- 
+        hdf = h5py.File(save_location,'w')
     
+    if experiment_name in [grp for grp in hdf.keys()]:
+        del hdf[experiment_name]
     experiment_group = hdf.require_group(experiment_name)
     element_scans = []
     all_scans = []
@@ -171,7 +177,7 @@ def avg_to_hdf5(sample_name,experiment_name,filepath = None,force = False):
             if 'Survey' in fp.split('/')[-1].split('.')[0]:
                 spectra = fp.split('/')[-1].split('.')[0].split()[1]
                 all_scans.append(spectra)
-                print(spectra)
+                # print(spectra)
             else:
                 spectra = fp.split('/')[-1].split('.')[0].split()[0]
                 if spectra =='Valence':
@@ -179,7 +185,7 @@ def avg_to_hdf5(sample_name,experiment_name,filepath = None,force = False):
                 else:
                     element_scans.append(spectra)
                     all_scans.append(spectra)
-                print(spectra)
+                # print(spectra)
             try:
                 experiment_group.attrs['data_path'] = fp
             except:
@@ -192,9 +198,10 @@ def avg_to_hdf5(sample_name,experiment_name,filepath = None,force = False):
             PROPERTIES, SPACEAXES, AXESDICT, DATA = read_avg(fp)
 
             experiment_group.require_group(spectra)
+            print(spectra)
             for props,val in PROPERTIES.items():
                 experiment_group[spectra].attrs[props] = val
-
+            print(experiment_name,spectra)
             experiment_group[spectra].create_dataset('E', data = DATA['E'])   
             experiment_group[spectra].create_dataset('I', data = DATA['I'])
 
