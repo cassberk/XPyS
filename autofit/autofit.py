@@ -1,6 +1,7 @@
 import numpy as np
 from copy import deepcopy as dc
 from xps_peakfit.helper_functions import *
+from IPython import embed as shell
 
 
 class autofit:
@@ -20,6 +21,10 @@ class autofit:
             autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitSi2p.txt'
         elif orbital =='C1s':
             autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitC1s.txt'
+        elif orbital =='O1s':
+            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitO1s.txt'
+        elif orbital =='F1s':
+            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitF1s.txt'
         else:
             print('No autofit yet')
             return
@@ -44,7 +49,10 @@ class autofit:
             if self.autofit_pars[par][0] == 'lin':
                 idx = index_of(self.energy, np.float(self.autofit_pars[par][1]))
 
-                guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2])
+                if len(self.autofit_pars[par]) == 3:
+                    guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2])
+                elif len(self.autofit_pars[par]) ==4:
+                    guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2]) + np.float(self.autofit_pars[par][3])
                 
             elif self.autofit_pars[par][0] == 'log':
                 idx = index_of(self.energy, np.float(self.autofit_pars[par][1]))
