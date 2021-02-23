@@ -3,9 +3,11 @@ O1s blue
 C1s teal
 N1s red
 F1s green
-Mo3d silver
+Mo3d yellow
 Si2p purple
 Nb3d orange
+Cr2p silver
+Au4f gold
 vb gray
 survey black
 Valence gray
