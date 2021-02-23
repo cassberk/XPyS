@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import pickle
-
+import gc
+import h5py
 def index_of(arr, val):
     """Return index of array nearest to a value."""
     if val < min(arr):
@@ -27,6 +28,15 @@ def guess_from_data(x,y, negative, peakpos, lims=2, ampscale=1.0, sigscale=1.0):
     halfmax_vals = np.where(y > (locmax+locmin)/2.0)[0]
 
     return amp, cen
+
+def closehdf5():
+    for obj in gc.get_objects():   # Browse through ALL objects
+        if isinstance(obj, h5py.File):   # Just HDF5 files
+            try:
+                obj.close()
+            except:
+                pass # Was already closed
+
 
 # def load_model(name):
 
