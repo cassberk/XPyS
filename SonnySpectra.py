@@ -32,60 +32,129 @@ import h5py
 
 from sklearn.decomposition import PCA
 from scipy.stats import pearsonr
+from scipy.interpolate import interp1d
 
 import matplotlib.patches as mpatches
+import decimal
+
+from IPython import embed as shell
 
 class SonnySpectra:
 
     def __init__(self,spectra=None):
         self.info = []
 
-    def load_spectra_objs(self,data_paths,spectra_name,exclude_list = []):
+    def load_spectra_objs(self,data_paths,spectra_name,experiment_name, exclude_list = []):
 
         datadict = {}
         for file in data_paths:
             if not any([exclude in file for exclude in exclude_list]):
                 fpath = os.path.join(cfg.datarepo['stoqd'],file)
-                f = h5py.File(fpath,'r')
-                exps = [k for k in f.keys()]
-                print(file.split('/')[-1],exps[0])
-                datadict[file.split('/')[-1].split('.')[0]] = xps_peakfit.io.load_spectra(filepath = fpath,experiment_name = exps[0],spec = spectra_name)
-                f.close()
+                with h5py.File(fpath,'r') as f:
+                    # exps = [k for k in f.keys()]
+                    # print(file.split('/')[-1],exps[0])
+                    datadict[file.split('/')[-1].split('.')[0]] = xps_peakfit.io.load_spectra(filepath = fpath,experiment_name = experiment_name,spec = spectra_name)
+                    # f.close()
 
         self.spectra_objects = datadict
 
     def bgsuball(self,subpars):
-        for sample in self.spectra_objects:
-            sample.bg_sub(crop_details=subpars)
+        for sample in self.spectra_objects.items():
+            sample[1].bg_sub(subpars=subpars)
 
-    def build_spectra_matrix(self,emin,emax,spectra_type = 'raw',subpars = None):
+    def interp_spectra(self,emin=None,emax=None,spectra_type = 'raw',step = 0.1):
+        # print('2')
+        ynew = None
+        if spectra_type == 'raw':
+            dset = ['E','I']
+            if (emin == None) and (emax != None):
+                # print('2.1')
+                emin, _emax = self._auto_bounds()
+            elif (emin != None) and (emax == None):
+                # print('2.2')
+                _emin, emax = self._auto_bounds()
+            elif (emin == None) and (emax == None):
+                # print('2.3')
+                emin, emax = self._auto_bounds()
+            self._check_bounds(emin,emax,spectra_type = spectra_type)
+            xnew = np.arange(emin, emax+step, step)
 
+        elif spectra_type == 'sub':
+            # print('2.4')
+            dset = ['esub','isub']
+            emin,emax = self._auto_bounds(spectra_type = 'sub')
+
+            self._check_bounds(emin,emax,spectra_type = spectra_type)
+            xnew = np.arange(emin, emax, step)
+            # probably want to make the spacing even given by ev step 0.1 but fuck it for now.
+        # print(emin,emax)
+        # xnew = np.arange(emin, emax+step, step)
+        # d = decimal.Decimal(str(step)).as_tuple().exponent
+        # if d < 0:
+        #     xnew = np.round(xnew,-1*d)
+        # print(np.min(xnew),np.max(xnew))
+        first = True
+        for name,obj in self.spectra_objects.items():
+
+            for i in range(len(obj.__dict__[dset[1]])):
+                f = interp1d(obj.__dict__[dset[0]], obj.__dict__[dset[1]][i],kind = 'cubic')
+                if not first:
+                    ynew = np.vstack((ynew,f(xnew)))
+                else:
+                # except NameError:
+                #     print('and here')
+                    ynew = f(xnew)
+                    first = False
+        # print(ynew)
+        return xnew,ynew
+
+    def _auto_bounds(self,spectra_type = 'raw'):
+        # print('3')
+        if spectra_type =='raw':
+            dset = 'E'
+        elif spectra_type == 'sub':
+            dset = 'esub'
+        largest_min_value = np.max([np.min(so[1].__dict__[dset]) for so in self.spectra_objects.items()])
+        smallest_max_value = np.min([np.max(so[1].__dict__[dset]) for so in self.spectra_objects.items()])
+
+        emin = (np.round(100*largest_min_value,2)+1)/100
+        emax = (np.round(100*smallest_max_value,2)-1)/100
+
+        return emin,emax
+
+    def _check_bounds(self,min_bnd,max_bnd,spectra_type = 'raw'):
+        # print('4')
+        if spectra_type =='raw':
+            dset = 'E'
+        elif spectra_type =='sub':
+            dset = 'esub'
+        check_min = [so[0] for so in self.spectra_objects.items() if not np.min(np.round(so[1].__dict__[dset],2)) <= min_bnd <=np.max(np.round(so[1].__dict__[dset],2))]
+        check_max = [so[0] for so in self.spectra_objects.items() if not np.min(np.round(so[1].__dict__[dset],2)) <= max_bnd <=np.max(np.round(so[1].__dict__[dset],2))]
+        
+        if check_min !=[]:
+            raise ValueError('The specified bounds are outside the minimum values for', check_min )
+        if check_max != []:
+            raise ValueError('The specified bounds are outside the maximum values for', check_max )
+
+    def build_spectra_matrix(self,emin=None,emax=None,spectra_type = 'raw',subpars = None,step = 0.1):
+        # print('1')
         if spectra_type == 'sub':
+            if subpars == None:
+                raise ValueError('You must specify subpars')
+            # print('1.1')
             self.bgsuball(subpars = subpars)
-            for name,obj in self.spectra_objects.items():
-                try:
-                    spectra = np.append(spectra,obj.isub,axis = 0)
-                except:
-                    spectra = obj.isub
+            print( subpars[0][0], subpars[0][1])
+            energy, spectra = self.interp_spectra(spectra_type = spectra_type,step = step)
 
         elif spectra_type =='raw':
-
-            for name,obj in self.spectra_objects.items():
-
-                if spectra_type == 'raw':
-                    Ei = sorted([index_of(obj.E,emin), index_of(obj.E,emax)])
-                    print(name, len(obj.E[Ei[0]:Ei[1]]))
-                    energy = obj.E[Ei[0]:Ei[1]]
-                    try:
-                        spectra = np.append(spectra,obj.I[:,Ei[0]:Ei[1]],axis = 0)
-                    except:
-                        spectra = obj.I[:,Ei[0]:Ei[1]]
+            # print('1.2')
+            energy, spectra = self.interp_spectra(emin = emin, emax = emax, spectra_type = spectra_type,step = step)
 
         self.energy = energy
         self.spectra = spectra
         self._spectra = spectra
 
-    def build_dataframe(self,spectra_dict=None,target = None,targetname = 'target',include_fit_params = True, spectra_type = 'sub'):
+    def build_dataframe(self,spectra_dict=None,target = None,targetname = 'target',include_fit_params = True):
         
         self.targetname = targetname
         if spectra_dict is None:
@@ -98,24 +167,22 @@ class SonnySpectra:
             print(sample[0],sample[1])
             
             if include_fit_params:
-                dd = {key: [sample[1].fit_results[i].params.valuesdict()[key] \
+
+                _dd = {key: [sample[1].fit_results[i].params.valuesdict()[key] \
                             for i in range(len( sample[1].fit_results))] \
                     for key in  sample[1].fit_results[0].params.valuesdict().keys()}       
 
-                dftemp = pd.DataFrame(dd)
+                dftemp = pd.DataFrame(_dd)
                 dftemp['sample'] = [sample[0]]*len(sample[1].fit_results)
             if target != None:
                 if type(target) == dict:
                     dftemp[self.targetname] = [target[sample[0]]]*len(sample[1].fit_results)
-            
+                    print(sample[0],len(sample[1].fit_results))
+
             try:
                 param_df = param_df.append(dftemp)
-                print('try',i)
-                i+=1
             except:
                 param_df = dftemp
-                print('except',i)
-                i+=1
 
             clear_output(wait = True)
 
@@ -393,7 +460,8 @@ class SonnySpectra:
         fig.tight_layout()
 
 
-    def find_linautofit(self,Xs,Ys):
+    def find_linautofit(self,Xs,Ys,plotflag = True):
+        # We can rewrite the line equation as y = Ap, where A = [[x 1]] and p = [[m], [b]]
         autofitparlist = []
         fig, axs = plt.subplots(1,len(Xs),figsize = (4*len(Xs),4))
 
@@ -402,11 +470,17 @@ class SonnySpectra:
             # print(Ys[i])
             x = np.array(self.df[Xs[i]])
             y = np.array(self.df[Ys[i]])
-            m = np.linalg.lstsq(x.reshape(-1,1), y,rcond = None)[0][0]
-            autofitparlist.append(' '.join([Ys[i],'lin',str(np.round(Xs[i],1)),str(m)]))
+            A = np.hstack((x.reshape(-1,1),  np.ones(len(x)).reshape(-1,1)))
+            m,b = np.linalg.lstsq(A, y,rcond = None)[0]
 
-            axs[i].plot(x, y, 'o')
-            axs[i].plot(x, m*x)
-            axs[i].set_xlabel(str(np.round(Xs[i],2))+' vs '+str(Ys[i]),fontsize = 14)
-        
+            # m = np.linalg.lstsq(x.reshape(-1,1), y,rcond = None)[0][0]
+
+            autofitparlist.append(' '.join([Ys[i],'lin',str(np.round(Xs[i],1)),str(np.round(m,3)),str(np.round(b,3))]))
+
+            if plotflag == True:
+                axs[i].plot(x, y, 'o')
+                axs[i].plot(x, m*x+b)
+                axs[i].set_xlabel(str(np.round(Xs[i],2))+' vs '+str(Ys[i]),fontsize = 14)
+                fig.tight_layout()
+
         return autofitparlist
