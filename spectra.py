@@ -25,6 +25,7 @@ import xps_peakfit.VAMAS
 import xps_peakfit.autofit.autofit
 import os
 import glob
+from IPython import embed as shell
 
 
 class spectra:
@@ -119,11 +120,11 @@ class spectra:
 
     ### Analysis functions
         
-    def bg_sub(self,crop_details=None,idx = None,UT2_params = None):
+    def bg_sub(self,subpars=None,idx = None,UT2_params = None):
 
         print(self.orbital)
-        if not crop_details == None:
-            self.bg_info = crop_details
+        if not subpars == None:
+            self.bg_info = subpars
 
         if idx == None:
             self.isub = [[] for k in range(len(self.I))]
@@ -193,15 +194,19 @@ class spectra:
 
         if track:
             pbar = tqdm(total=len(specific_points))
-
+        # self.par_guess_track = {}
+        # self.par_guess_track['O1_amplitude'] = []
+        # self.par_guess_track['O2_amplitude'] = []
+        if autofit:
+            print('autofitting...')
         for i in specific_points:
 
             if autofit:
-                print('autofitting...')
-                params_guess = xps_peakfit.autofit.autofit.autofit(self.esub,self.isub[i],self.orbital)
-                for par in params_guess.keys():
-                    self.params[par].value = params_guess[par]
-
+                if not hasattr(self,'autofit'):
+                    self.autofit = xps_peakfit.autofit.autofit.autofit(self.esub,self.isub[i],self.orbital)
+                for par in self.autofit.guess_pars.keys():
+                    self.params[par].value = self.autofit.guess_pars[par]
+                    # self.par_guess_track[par].append(self.autofit.guess_pars[par])
             self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
             if update_with_prev_pars ==True:

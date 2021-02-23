@@ -154,7 +154,7 @@ class sample:
 
 
     ####
-    def xps_overview(self,bkgrd_subtraction_dict = None, plotflag = True, plotspan = True):
+    def xps_overview(self,subpars = None, plotflag = True, plotspan = True):
         """Returns an overview of the spectra that are held in sample.
 
        The overview plots all of the raw signals, the background subtracted
@@ -175,8 +175,12 @@ class sample:
         :func: plot_all_spectra(), plot_all_sub(), plot_atomic_percent()
 
         """
+        if subpars != None:
+            for orb in subpars.keys():
+                self.bg_info[orb] = subpars[orb]
         self.bg_sub_all()
         self.calc_atomic_percent()
+        self.plotflag = plotflag
 
         if self.plotflag == True:
 
@@ -208,7 +212,7 @@ class sample:
         """        
         for spectra in self.element_scans:
             if not spectra in ['XPS','Valence','vb','Survey']:
-                self.__dict__[spectra].bg_sub(crop_details = self.bg_info[spectra])
+                self.__dict__[spectra].bg_sub(subpars = self.bg_info[spectra])
 
 
     def calc_atomic_percent(self, specify_spectra = None):
@@ -237,32 +241,46 @@ class sample:
 
 
     ### Plotting functions
-    def plot_all_spectra(self,offval=0, plotspan=False, saveflag=0,filepath = '',figdim = (15,20)):
+    def plot_all_spectra(self,offval=0, plotspan=False, saveflag=0,filepath = '',fig = None,ax = None,figdim = None,done_it = None):
 
-        fig,ax = plt.subplots(int(np.ceil((len(self.element_scans)+2)/3)) ,3, figsize = figdim)
-        ax = ax.ravel()
+
+        if (fig is None) and (ax is None):
+            if figdim is None:
+                figdim = (15,int(np.ceil((len(self.element_scans)+2)/3))*4)
+            
+            fig,ax = plt.subplots(int(np.ceil((len(self.element_scans)+2)/3)) ,3, figsize = figdim)
+            ax = ax.ravel()
+
+            orderlist = [(orbital,np.max(self.__dict__[orbital].E)) for orbital in self.element_scans]
+            orderlist.sort(key=lambda x:x[1])
+            orderlist = ['Survey','Valence']+[spec[0] for spec in orderlist][::-1]
+
+
+            ax = {orb[1]:ax[orb[0]] for orb in enumerate(orderlist)}
+
         # print(len(ax))
-        j = 0
+        
         for spectra in self.all_scans:
             for i in range(len(self.__dict__[spectra].I)):
-                ax[j].plot(self.__dict__[spectra].E,self.__dict__[spectra].I[i]+i*offval,label = spectra, color = self.spectra_colors[spectra])
+                ax[spectra].plot(self.__dict__[spectra].E,self.__dict__[spectra].I[i]+i*offval,label = spectra, color = self.spectra_colors[spectra])
 
-            ax[j].set_title(spectra,fontsize=24)
-            ax[j].set_xlim(max(self.__dict__[spectra].E),min(self.__dict__[spectra].E))
-            ax[j].set_xlabel('Binding Energy (eV)',fontsize = 20)
-            ax[j].set_ylabel('Counts/s',fontsize = 20)
+            ax[spectra].set_title(spectra,fontsize=24)
+            ax[spectra].set_xlim(max(self.__dict__[spectra].E),min(self.__dict__[spectra].E))
+            ax[spectra].set_xlabel('Binding Energy (eV)',fontsize = 20)
+            ax[spectra].set_ylabel('Counts/s',fontsize = 20)
 
-            ax[j].tick_params(labelsize=16)
-            ax[j].tick_params(labelsize=16)
+            ax[spectra].tick_params(labelsize=16)
+            ax[spectra].tick_params(labelsize=16)
 
-            if (plotspan==True) and (spectra in self.element_scans):
+            if (plotspan==True) and (spectra in self.element_scans) and (done_it[spectra] ==False):
                 if self.bg_info[spectra][1] == 'shirley':
-                    ax[j].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='orange')
+                    ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='orange')
                 elif self.bg_info[spectra][1] == 'linear':
-                    ax[j].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='green')
+                    ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='green')
                 elif self.bg_info[spectra][1] == 'UT2':
-                    ax[j].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='blue')
-            j+=1
+                    ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='blue')
+                if not done_it is None:
+                    done_it[spectra] = True
 
         fig.tight_layout(pad=2)
 
@@ -278,10 +296,13 @@ class sample:
         fig,ax = plt.subplots(int(np.ceil(len(self.element_scans)/2)) ,2, figsize = (15,15))
         ax = ax.ravel()
 
+        orderlist = [(orbital,np.max(self.__dict__[orbital].E)) for orbital in self.element_scans]
+        orderlist.sort(key=lambda x:x[1])
+        orderlist = [spec[0] for spec in orderlist][::-1]
 
-        # fit_legend = dc(self.__dict__['C1s']['pos names'])
 
-        j = 0
+        ax = {orb[1]:ax[orb[0]] for orb in enumerate(orderlist)}
+
         for spectra in self.element_scans:
 
             for i in range(len(self.__dict__[spectra].I)):
@@ -289,27 +310,26 @@ class sample:
                 ax[j].plot(self.__dict__[spectra].esub,self.__dict__[spectra].isub[i] + offval*i,label = spectra, color = self.spectra_colors[spectra])
 
 
-            ax[j].set_title(spectra,fontsize=24)
-            ax[j].set_xlim(max(self.__dict__[spectra].esub),min(self.__dict__[spectra].esub))
+            ax[spectra].set_title(spectra,fontsize=24)
+            ax[spectra].set_xlim(max(self.__dict__[spectra].esub),min(self.__dict__[spectra].esub))
 
             # if self.normalize_subtraction ==True:
             #     ax[j].set_ylim(-0.05,(np.ceil(np.max([np.max(self.__dict__[spectra].isub[i]) for i in range(len(self.__dict__[spectra].isub))\
             #                    if np.max(self.__dict__[spectra].isub[i]) <1])*10))/10)
 
-            ax[j].set_xlabel('Binding Energy (eV)',fontsize = 20)
-            ax[j].set_ylabel('Counts/s',fontsize = 20)
+            ax[spectra].set_xlabel('Binding Energy (eV)',fontsize = 20)
+            ax[spectra].set_ylabel('Counts/s',fontsize = 20)
 
-            ax[j].tick_params(labelsize=16)
-            ax[j].tick_params(labelsize=16)
+            ax[spectra].tick_params(labelsize=16)
+            ax[spectra].tick_params(labelsize=16)
 
             if self.bg_info[spectra][1] == 'shirley':
-                ax[j].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='orange')
+                ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='orange')
             elif self.bg_info[spectra][1] == 'linear':
-                ax[j].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='green')
+                ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='green')
             elif self.bg_info[spectra][1] == 'UT2':
-                ax[j].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='blue')
+                ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='blue')
 
-            j+=1
 
         # fig.legend(fit_legend,loc='center left', bbox_to_anchor=(1.0, 0.5),fontsize=20)
 
