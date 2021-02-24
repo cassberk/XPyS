@@ -26,55 +26,47 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
 
 
     f = h5py.File(filepath,'a')
-    if experiment_name in f.keys() and force == False:
-        print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
-            or save the individual attribute you are interested in')
-        return
+    # if experiment_name in f.keys() and force == False:
+    #     print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
+    #         or save the individual attribute you are interested in')
+    #     return
 
-    elif experiment_name in f.keys() and force == True:
-        del f[experiment_name]
-        experiment_group = f.create_group(experiment_name)
+    # elif experiment_name in f.keys() and force == True:
+    #     del f[experiment_name]
+    #     experiment_group = f.create_group(experiment_name)
     
-    else:
-        experiment_group = f.require_group(experiment_name)
-
-    try:
-        write_vamas_to_hdf5(sample_obj.data_raw, experiment_group)
-    except:
-        print('Couldnt write vamas file')
-        pass
+    # else:
+    #     experiment_group = f.require_group(experiment_name)
 
 
-
-    # exp_attr = ('data_path','element_scans','all_scans','sample_name','positions')
-    # for attr in exp_attr:
-    #     try:
-    #         experiment_group.attrs[attr] = sample_obj.__dict__[attr]
-    #     except:
-    #         experiment_group.attrs[attr] = 'Not Specified'
+    if any(['total_area' == it for it in [i[0] for i in f[experiment_name].items()]]):
+        del f[experiment_name]['total_area']
+    for group_attr in ['positions','bg_info','atomic_percent']:
+        if any([group_attr == it for it in [i for i in f[experiment_name].attrs]]):
+            del f[experiment_name].attrs[group_attr]
 
     # total_area
     try:
-        experiment_group.create_dataset('total_area', data = sample_obj.total_area)
+        f[experiment_name].create_dataset('total_area', data = sample_obj.total_area)
     except:
         print('couldnt total area')
         pass
     
     # scan positions
     try:
-        experiment_group.attrs['positions'] = sample_obj.positions  #prob want to change this eventually
+        f[experiment_name].attrs['positions'] = sample_obj.positions  #prob want to change this eventually
     except:
         print('position')
-        experiment_group.attrs['positions'] = 'Not Specified'
+        f[experiment_name].attrs['positions'] = 'Not Specified'
         
     #json dictionaries
     try:
-        experiment_group.attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
+        f[experiment_name].attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
     except:
         print('couldnt bg_info on sampleobj')
         pass
     try:
-        experiment_group.attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
+        f[experiment_name].attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
     except:
         print('couldnt atomic_percent on sample obj')
         pass
@@ -303,10 +295,13 @@ def load_sample(filepath = None, experiment_name = None):
             sample_obj.__dict__[attr] = f[experiment_name].attrs[attr]
             print(sample_obj.__dict__[attr])
         except:
+            print('couldnt',attr)
             pass
 
     try:
         sample_obj.atomic_percent = json.loads(f[experiment_name].attrs['atomic_percent'])
+        for spec in sample_obj.atomic_percent.keys():
+            sample_obj.atomic_percent[spec] = np.asarray(sample_obj.atomic_percent[spec])
     except:
         pass
 
@@ -338,7 +333,10 @@ def load_sample(filepath = None, experiment_name = None):
         # that contains all the spectra and analysis
         sample_obj.__dict__[spec] = load_spectra(filepath = filepath, experiment_name = experiment_name,spec = spec)
         sample_obj.__dict__[spec].spectra_name = sample_obj.sample_name
-        # sample_obj.__dict__[spec].atomic_percent = sample_obj.atomic_percent[spec]
+        # try:
+        #     sample_obj.__dict__[spec].atomic_percent = sample_obj.atomic_percent[spec]
+        # except:
+        #     print('couldnt load atomic percent on',spec)
     f.close()
 
     return sample_obj
@@ -356,10 +354,13 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
 
     # if openhdf5 == False:
     f= h5py.File(filepath,"r")
-    spectra_obj.comments = f[experiment_name][spec].attrs['DS_EXT_SUPROPID_COMMENTS']
+    try:
+        spectra_obj.comments = f[experiment_name][spec].attrs['DS_EXT_SUPROPID_COMMENTS']
+    except:
+        pass
     ##################################
     # Datasets
-    for data in ['E','I','esub','isub','area']:
+    for data in ['E','I','esub','isub','area','atomic_percent','BE_adjust']:
         try:
             spectra_obj.__dict__[data] = f[experiment_name][spec][data][...]
         except:
