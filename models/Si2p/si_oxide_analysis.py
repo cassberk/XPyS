@@ -43,10 +43,8 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
 
         for pairs in sample.pairlist:
             # print(pairs)
-            if hasattr(sample,'fit_results_idx'):
-                fit_component[pairs[0]][k[0]] = sum( [sfact[pairs[0]]*sample.fit_results[k[1]].params[pairs[0] + 'amplitude'].value for i in range(len(pairs))] )
-            else:
-                fit_component[pairs[0]][k[0]] = sum( [sfact[pairs[0]]*sample.params_full[k[1]][pairs[0] + 'amplitude'].value for i in range(len(pairs))] )                    
+            fit_component[pairs[0]][k[0]] = sum( [sfact[pairs[0]]*sample.fit_results[k[1]].params[pairs[0] + 'amplitude'].value for i in range(len(pairs))] )
+               
 
         sample.thickness[k[0]] = np.mean( EAL*np.log( 1 + S_substrate*sum([fit_component[ox][k[0]] for ox in oxides])/(S_oxide*fit_component[substrate][k[0]]) ) ) 
 

@@ -1,6 +1,8 @@
 incorporate peak references with materials project
 turn bksub parameters into class
-config.py for data repos
 model create
 fix spectra color dependency
 fix all gui_element_dict
+add error to bkgrd subpars not being in correct range
+
+THere may be an issue with hdf5 storage the same files have different sizes (old and new structure)
