@@ -13,10 +13,10 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
 
 
     if specific_points == None:
-        if hasattr(sample,'fit_results_idx'):
-            pts = [j for j,x in enumerate(sample.fit_results) if x] 
-        else:
-            pts = [j for j,x in enumerate(sample.params_full) if x] 
+        # if hasattr(sample,'fit_results_idx'):
+        pts = [j for j,x in enumerate(sample.fit_results) if x] 
+        # else:
+        #     pts = [j for j,x in enumerate(sample.params_full) if x] 
 
     else:
         pts = dc(specific_points)
@@ -28,7 +28,7 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
     else:
         sfact = SFactors
 
-    print(pts)
+    # print(pts)
 
     areas = np.empty([len(sample.pairlist),len(pts)])
 

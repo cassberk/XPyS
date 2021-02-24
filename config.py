@@ -15,10 +15,10 @@ datarepo = {
 # 3. the starting parameters for the UT2 filt
 # 4. the indices to fit
 bkgrd_subtraction = {
-    'Si2p': [(98.5, 106.5), 'linear'],
+    'Si2p': [(98.0, 106.5), 'linear'],
     'Ti2p': [(452.5, 470), 'UT2', (681, 1, 355, 0), (0, -1)],
     'Cr2p': [(570, 590), 'linear'],
-    'O1s': [(570,590), 'linear'],
+    'O1s': [(527,536), 'linear'],
     'N1s': [(395, 401), 'shirley'],
     'C1s': [(281.5, 294), 'linear'],
     'F1s': [(682, 693), 'linear'],
