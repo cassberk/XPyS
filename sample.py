@@ -13,6 +13,7 @@ import xps_peakfit.spectra as sp
 import xps_peakfit.config as cfg
 import xps_peakfit.VAMAS
 import os
+from IPython import embed as shell
 
 
 
@@ -307,7 +308,7 @@ class sample:
 
             for i in range(len(self.__dict__[spectra].I)):
                 
-                ax[j].plot(self.__dict__[spectra].esub,self.__dict__[spectra].isub[i] + offval*i,label = spectra, color = self.spectra_colors[spectra])
+                ax[spectra].plot(self.__dict__[spectra].esub,self.__dict__[spectra].isub[i] + offval*i,label = spectra, color = self.spectra_colors[spectra])
 
 
             ax[spectra].set_title(spectra,fontsize=24)
@@ -345,13 +346,13 @@ class sample:
         else:
             fig = infig
             ax = inax
-
         x = np.arange(len(self.__dict__['C1s'].atomic_percent))
 
         if self.sputter_time is not None:
             x = x * self.sputter_time
         
         for spectra in self.atomic_percent.keys():
+
             ax.plot(x,self.atomic_percent[spectra]*100, color = self.spectra_colors[spectra],linewidth = 3,**pltkwargs)
 
 
