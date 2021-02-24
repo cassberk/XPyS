@@ -55,9 +55,13 @@ def load_model(model):
     return mod, pars, pairlist, element_ctrl
 
 
-def model_list():
+def model_list(startpath = None):
+    if startpath is None:
+        start_dir = "/Users/cassberk/code/xps_peakfit/models"
+    else:
+        start_dir = startpath
     result = []
-    for root, dirs, files in os.walk("/Users/cassberk/code/xps_peakfit/models"):
+    for root, dirs, files in os.walk(start_dir):
         for file in files:
             if file.endswith(".hdf5"):
                 result.append(file.split('.')[-2])
