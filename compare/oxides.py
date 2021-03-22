@@ -84,7 +84,7 @@ def plot_oxides(sample_spectra,set_idx = None, error = 'std', width = 0.8,capsiz
     # ax.set_xscale('log')
 
 
-    plt.legend(p,[element_text[oxides] for oxides in fit_legend],bbox_to_anchor=(1.0, 0.4, 0.0, 0.5),fontsize=20)
-    plt.grid() 
+    plt.legend(p,[element_text[oxides] for oxides in fit_legend],bbox_to_anchor=(1.0, 0.4, 0.0, 0.5),fontsize=30)
+    # plt.grid() 
     # return color_list, oxplotlist
     return fig, ax
