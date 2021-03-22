@@ -8,6 +8,7 @@ Si2p purple
 Nb3d orange
 Cr2p silver
 Au4f gold
+Ti2p silver
 vb gray
 survey black
 Valence gray
