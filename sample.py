@@ -242,7 +242,7 @@ class sample:
 
 
     ### Plotting functions
-    def plot_all_spectra(self,offval=0, plotspan=False, saveflag=0,filepath = '',fig = None,ax = None,figdim = None,done_it = None):
+    def plot_all_spectra(self,offval=0, plotspan=False, saveflag=0,filepath = '',fig = None,ax = None,figdim = None,done_it = False):
 
 
         if (fig is None) and (ax is None):
@@ -273,15 +273,16 @@ class sample:
             ax[spectra].tick_params(labelsize=16)
             ax[spectra].tick_params(labelsize=16)
 
-            if (plotspan==True) and (spectra in self.element_scans) and (done_it[spectra] ==False):
+            # if (plotspan==True) and (spectra in self.element_scans) and (done_it[spectra] ==False):
+            if (plotspan==True) and (spectra in self.element_scans):
                 if self.bg_info[spectra][1] == 'shirley':
                     ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='orange')
                 elif self.bg_info[spectra][1] == 'linear':
                     ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='green')
                 elif self.bg_info[spectra][1] == 'UT2':
                     ax[spectra].axvspan( np.min(self.bg_info[spectra][0]), np.max(self.bg_info[spectra][0]) , alpha=0.1, color='blue')
-                if not done_it is None:
-                    done_it[spectra] = True
+                # if not done_it is None:
+                #     done_it[spectra] = True
 
         fig.tight_layout(pad=2)
 
@@ -357,11 +358,15 @@ class sample:
 
 
         # ax.title(sample,fontsize = 24)
-        ax.set_xlabel('Position',fontsize = 30)
+        
+        if self.sputter_time is not None:
+            ax.set_xlabel('Sputter Time',fontsize = 30)
+        else:
+            ax.set_xlabel('Position',fontsize = 30)
         ax.set_ylabel('Atomic Percent',fontsize = 30)
 
-        ax.tick_params(labelsize=20)
-        ax.tick_params(labelsize=20)
+        ax.tick_params(labelsize=8)
+        ax.tick_params(labelsize=8)
 
         ax.set_xticks(x)
         ax.set_ylim(ymin = 0)
