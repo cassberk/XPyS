@@ -172,11 +172,17 @@ class spectra:
                     
                     self.bg[i],self.isub[i] = backsub.Tougaard(result_tou.params, self.I[i],self.E)
                     self.bgpars[i] = result_tou.params
+                    self.bg_info[2] = (result_tou.params['B'].value, result_tou.params['B'].vary,result_tou.params['C'].value,result_tou.params['C'].vary)
+                    # self.bg_info[2][1] = result_tou.params['B'].vary
+                    # self.bg_info[2][2] = result_tou.params['C'].value
+                    # self.bg_info[2][3] = result_tou.params['C'].vary
                 elif UT2_params != None:
                     
                     self.bg[i],self.isub[i] = backsub.Tougaard(UT2_params, self.I[i],self.E)
                     self.bgpars[i] = UT2_params
-                    
+                    self.bg_info[2] = (result_tou.params['B'].value, result_tou.params['B'].vary,result_tou.params['C'].value,result_tou.params['C'].vary)
+
+
             self.area[i] = np.trapz( np.flip(self.isub[i]) , np.flip(self.esub) )
 
         # return self.esub, self.isub[i], self.bg[i], self.bgpars[i], self.area[i]
