@@ -6,10 +6,17 @@ element_text['NbO_52_'] = '$NbO$'
 element_text['NbO2_52_'] = '$NbO_2$'
 element_color = {}
 
-element_color['Nb_52_'] = 'orange'
-element_color['Nb2O5_52_'] = 'royalblue'
-element_color['NbO_52_'] = 'green'
-element_color['NbO2_52_'] = 'red'
+# element_color['Nb_52_'] = 'orange'
+# element_color['Nb2O5_52_'] = 'royalblue'
+# element_color['NbO_52_'] = 'green'
+# element_color['NbO2_52_'] = 'red'
+
+element_color['Nb_52_'] = 'black'
+element_color['Nb2O5_52_'] = 'red'
+element_color['NbO_52_'] = 'blue'
+element_color['NbO2_52_'] = 'green'
+
+
 element_refpos = {}
 
 element_refpos['Nb_52_'] = 202.2
@@ -18,6 +25,30 @@ element_refpos['NbO_52_'] = 203.7
 element_refpos['NbO2_52_'] = 206.2
 
 ### TiN
+element_text['TiN_32_'] = '$TiN$'
+element_text['TiN_shk32_'] = '$TiN Shakeup$'
+element_text['TiO2_32_'] = '$TiO_2$'
+element_text['TiON_32_'] = '$TiO_xN_y$'
+element_text['SP_32_'] = 'Surface Plasmon'
+element_text['BP_1_'] = 'Bulk Plasmon 1'
+element_text['BP_2_'] = 'Bulk Plasmon 2'
+
+element_color['TiN_32_'] = 'blue'
+element_color['TiN_shk32_'] = 'green'
+element_color['TiO2_32_'] = 'orange'
+element_color['TiON_32_'] = 'yellow'
+element_color['SP_32_'] = 'red'
+element_color['BP_1_'] = 'purple'
+element_color['BP_2_'] = 'purple'
+
+element_refpos['TiN_32_'] = 455.2
+element_refpos['TiN_shk32_'] = 458.5
+element_refpos['TiO2_32_'] = 458.18
+element_refpos['TiON_32_'] = 456.59
+element_refpos['SP_32_'] = 0
+element_refpos['BP_1_'] = 0
+element_refpos['BP_2_'] = 0
+
 element_text['Ti_TiN_32_'] = '$TiN$'
 element_text['Ti_TiN_shk32_'] = '$TiN Shakeup$'
 element_text['Ti_TiO2_32_'] = '$TiO_2$'
@@ -41,7 +72,6 @@ element_refpos['Ti_TiON_32_'] = 456.59
 element_refpos['Ti_SP_32_'] = 0
 element_refpos['Ti_BP_1_'] = 0
 element_refpos['Ti_BP_2_'] = 0
-
 
 
 ### Si
@@ -87,11 +117,11 @@ element_text['SiOx1_32_'] = '$Si^{1+}$'
 element_text['SiOx2_32_'] = '$Si^{2+}$'
 element_text['SiOx3_32_'] = '$Si^{3+}$'
 
-element_color['Si_32_'] = 'navy'
-element_color['SiOx4_32_'] = 'plum'
-element_color['SiOx1_32_'] = 'blue'
-element_color['SiOx2_32_'] = 'mediumpurple'
-element_color['SiOx3_32_'] = 'darkviolet'
+element_color['Si_32_'] = 'purple'
+element_color['SiOx4_32_'] = 'brown'
+element_color['SiOx1_32_'] = 'orange'
+element_color['SiOx2_32_'] = 'orange'
+element_color['SiOx3_32_'] = 'yellow'
 
 element_refpos['Si_32_'] = 99.4
 element_refpos['SiOx4_32_'] = 103.5
