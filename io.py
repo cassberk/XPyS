@@ -213,7 +213,6 @@ def save_spectra_analysis(spectra_obj,filepath = None, experiment_name = None,fo
     #             experiment_group[spectra].attrs['oxide_thickness_err'] = 'Not Specified'
             pass     
 
-    # f.close()
 
 
 
@@ -357,6 +356,11 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
     try:
         spectra_obj.comments = f[experiment_name][spec].attrs['DS_EXT_SUPROPID_COMMENTS']
     except:
+        pass
+    try:
+        spectra_obj.positions = f[experiment_name][spec]['I'].attrs['Position']
+    except:
+        print('couldnt load positions')
         pass
     ##################################
     # Datasets
