@@ -188,7 +188,8 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
 
         ax.set_xticks(np.arange(0,len(pts)))
         
-        # ax.set_xticklabels(sample.data['pos names'],rotation = 90)
+        if hasattr(sample,'positions'):
+            ax.set_xticklabels(sample.positions,rotation = 90)
         ax.tick_params(labelsize = 40)
         ax.set_ylabel('Thickness (nm)',fontsize=40);
 

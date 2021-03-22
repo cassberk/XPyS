@@ -72,6 +72,8 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
             comps_so_far.append(ox[1])
 
         ax.set_xticks(pts)
+        if hasattr(sample,'positions'):
+            ax.set_xticklabels(sample.positions,rotation = 90)
         ax.tick_params(labelsize = 40)
         ax.set_ylabel('Thickness (nm)',fontsize=40);
 
