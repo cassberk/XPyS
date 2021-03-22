@@ -39,7 +39,14 @@ def load_model(model):
 
     # pairlist
     try:
-        pairlist = [tuple(f.attrs['pairlist'][i]) for i in range(len(f.attrs['pairlist']))]
+        plist = [tuple(f.attrs['pairlist'][i]) for i in range(len(f.attrs['pairlist']))]
+        pairlist = []
+        for pair in plist:
+            if pair[1] == '':
+                pairlist.append(tuple([pair[0]]))
+            else:
+                pairlist.append(pair)
+
     except:
         print(model,'couldnt load pairlist')
 
