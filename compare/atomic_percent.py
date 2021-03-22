@@ -19,12 +19,13 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
         _ax = ax
 
     for sample in enumerate(sample_list):
+        # print(sample[1].sample_name)
+        fade = 1
+        # if sample[0]%2 == 1:
 
-        if sample[0]%2 == 1:
-
-            fade = 0.3
-        else:
-            fade = 1
+        #     fade = 0.3
+        # else:
+        #     fade = 1
 
         
 
@@ -37,9 +38,7 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
             # sample[1].calc_atomic_percent(specify_spectra = spectra_list)
 
         for spectra in enumerate(spectra_list):
-            
-
-
+            # print(spectra)
             if idx is None:
                 at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent.mean()
                 at_pct_err = 100*sample[1].__dict__[spectra[1]].atomic_percent.std()
@@ -78,8 +77,9 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
     return fig, ax
 
 
-def compare_atomic_percents(sample_list,idx = None, error = 'std', spectra_colors = None, specify_names = None, \
-    specify_spectra = None,  ticklabels = None, capsize = 20):
+def compare_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = None, specify_names = None, recalc = False,\
+    specify_spectra = None, capsize = 20):
+
 
 
     if specify_spectra is None:
@@ -88,24 +88,49 @@ def compare_atomic_percents(sample_list,idx = None, error = 'std', spectra_color
     else:
         spectra_list = specify_spectra
         spectra_width = width/len(specify_spectra)
-
+        # sample[1].calc_atomic_percent(specify_spectra = spectra_list)
+        
+    if recalc == True:
+        for sample in sample_list:
+            sample.calc_atomic_percent(specify_spectra = spectra_list)
     fig,ax = plt.subplots(1,len(spectra_list),figsize = (16,4))
     ax = ax.ravel()
-    for orb in enumerate(spectra_list):
-        f,a = xps_peakfit.compare.atomic_percent.plot_atomic_percents([e3,e4] ,spectra_colors = spectra_colors,specify_spectra = [orb[1]],\
-                                                                    fig = fig, ax = ax[orb[0]])
-        a.set_xticks(np.linspace(0,18,10))
-        a.set_xticklabels(ticklabels,rotation = 90,fontsize = 14)
+    
+    for spectra in enumerate(spectra_list):
+
+        if idx is None:
+            at_pct = [100*sample.__dict__[spectra[1]].atomic_percent.mean() for sample in sample_list]
+            at_pct_err = [100*sample.__dict__[spectra[1]].atomic_percent.std() for sample in sample_list]
+        elif type(idx[0]) is list:
+            at_pct = [100*sample[1].__dict__[spectra[1]].atomic_percent[idx[sample[0]][0]:idx[sample[0]][1]].mean() for sample in enumerate(sample_list)]
+            at_pct_err = [100*sample[1].__dict__[spectra[1]].atomic_percent[idx[sample[0]][0]:idx[sample[0]][1]].std() for sample in enumerate(sample_list)]
+        elif type(idx[0]) is int:
+            at_pct = [100*sample[1].__dict__[spectra[1]].atomic_percent[idx[sample[0]]] for sample in enumerate(sample_list)]
+            at_pct_err = 0
+            
+        ax[spectra[0]].bar(np.arange(len(at_pct)), at_pct, yerr=at_pct_err,error_kw=dict(lw=3, capsize=0, capthick=3), color = spectra_colors[spectra[1]])
+
+
+        ax[spectra[0]].set_xticks(np.arange(len(sample_list)))
+
+        ax[spectra[0]].tick_params(labelsize = 20)
+        if specify_names is None:
+            xlabel_list = ['No Name' if label_list is None else label_list for label_list in [sample_list[i].sample_name for i in range(len(sample_list))]]
+        else:
+            xlabel_list = specify_names
+        ax[spectra[0]].set_xticklabels(xlabel_list,rotation = 80)
+        if spectra[0] == 0:
+            ax[spectra[0]].set_ylabel('Atomic Percent',fontsize=20);
+        ax[spectra[0]].set_ylim([0,50])
+        ax[spectra[0]].grid() 
 
     patchlist = []    
     for orb in spectra_list:
         patchlist.append(mpatches.Patch(color=spectra_colors[orb], label=orb))
 
-    fig.legend(handles=patchlist,bbox_to_anchor=(1.01, 0.85), loc='upper left',fontsize = 18)
+    fig.legend(handles=patchlist,bbox_to_anchor=(1.05, 1.), loc='upper left',fontsize = 18)
     fig.tight_layout()
+#     plt.legend(fig_list,fig_legend,bbox_to_anchor=(1.0, 0.4, 0.0, 0.5),fontsize=20)
 
-    fig.add_subplot(111, frameon=False)
-    plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 
-    plt.xlabel('Etching Time (sec)',fontsize = 14,labelpad=35)
-    plt.ylabel('Atomic Percent',fontsize = 14,labelpad=20)
+    return fig, ax
