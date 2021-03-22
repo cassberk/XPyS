@@ -147,22 +147,23 @@ def read_avg(filepath):
                 
 
                
-def avg_to_hdf5(sample_name,experiment_name,filepath = None,savepath=None,force = False):
+def avg_to_hdf5(sample_name,experiment_name,avgfiles = None,savepath=None,force = False):
     
-    if filepath == None:
+    if avgfiles == None:
         filelist = glob.glob(os.getcwd()+'/*')
-    elif type(filepath)==list:
-        filelist = filepath
-    elif type(filepath) == str:
-        filelist = glob.glob(filepath+'/*')
+    elif type(avgfiles)==list:
+        filelist = avgfiles
+    elif type(avgfiles) == str:
+        filelist = glob.glob(avgfiles+'/*')
 
     if savepath == None:
         save_location = '/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5')
+        print('save location is: ',save_location)
     else:
         save_location = savepath
 
     if force == False:
-        hdf = h5py.File(save_location,'a')
+        hdf = h5py.File(save_location,'r+')
     elif force == True:
         hdf = h5py.File(save_location,'w')
     
@@ -194,11 +195,11 @@ def avg_to_hdf5(sample_name,experiment_name,filepath = None,savepath=None,force 
                 experiment_group.attrs['sample_name'] = sample_name
             except:
                 print('sample_name didnt work')
-
+            # shell()
             PROPERTIES, SPACEAXES, AXESDICT, DATA = read_avg(fp)
 
             experiment_group.require_group(spectra)
-            print(spectra)
+            # print(spectra)
             for props,val in PROPERTIES.items():
                 experiment_group[spectra].attrs[props] = val
             print(experiment_name,spectra)
