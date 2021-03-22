@@ -44,16 +44,17 @@ class SonnySpectra:
     def __init__(self,spectra=None):
         self.info = []
 
-    def load_spectra_objs(self,data_paths,spectra_name,experiment_name, exclude_list = []):
+    def load_spectra_objs(self,data_paths,spectra_name,experiment_name = None, exclude_list = []):
 
         datadict = {}
         for file in data_paths:
+            print(any([exclude in file for exclude in exclude_list]))
             if not any([exclude in file for exclude in exclude_list]):
                 fpath = os.path.join(cfg.datarepo['stoqd'],file)
                 with h5py.File(fpath,'r') as f:
-                    # exps = [k for k in f.keys()]
+                    exps = [k for k in f.keys()]
                     # print(file.split('/')[-1],exps[0])
-                    datadict[file.split('/')[-1].split('.')[0]] = xps_peakfit.io.load_spectra(filepath = fpath,experiment_name = experiment_name,spec = spectra_name)
+                    datadict[file.split('/')[-1].split('.')[0]] = xps_peakfit.io.load_spectra(filepath = fpath,experiment_name = exps[0],spec = spectra_name)
                     # f.close()
 
         self.spectra_objects = datadict
@@ -63,6 +64,7 @@ class SonnySpectra:
             sample[1].bg_sub(subpars=subpars)
 
     def interp_spectra(self,emin=None,emax=None,spectra_type = 'raw',step = 0.1):
+        """Interpolate the spectra to all have the same binding energies"""
         # print('2')
         ynew = None
         if spectra_type == 'raw':
@@ -77,7 +79,7 @@ class SonnySpectra:
                 # print('2.3')
                 emin, emax = self._auto_bounds()
             self._check_bounds(emin,emax,spectra_type = spectra_type)
-            xnew = np.arange(emin, emax+step, step)
+            xnew = np.arange(emin, emax, step)
 
         elif spectra_type == 'sub':
             # print('2.4')
@@ -95,7 +97,7 @@ class SonnySpectra:
         # print(np.min(xnew),np.max(xnew))
         first = True
         for name,obj in self.spectra_objects.items():
-
+            print(name)
             for i in range(len(obj.__dict__[dset[1]])):
                 f = interp1d(obj.__dict__[dset[0]], obj.__dict__[dset[1]][i],kind = 'cubic')
                 if not first:
@@ -109,6 +111,9 @@ class SonnySpectra:
         return xnew,ynew
 
     def _auto_bounds(self,spectra_type = 'raw'):
+        """Search through the spectra to get bounds for the interpolation since some spectra have 
+        different binding energy ranges
+        """
         # print('3')
         if spectra_type =='raw':
             dset = 'E'
@@ -123,6 +128,7 @@ class SonnySpectra:
         return emin,emax
 
     def _check_bounds(self,min_bnd,max_bnd,spectra_type = 'raw'):
+        """check to make sure the boudns are not outside the binding energies of any of the spectra"""
         # print('4')
         if spectra_type =='raw':
             dset = 'E'
@@ -241,9 +247,10 @@ class SonnySpectra:
             plt.plot(self.peaktrack,'o-')
 
 
-    def pad_or_truncate(self,some_list, desired_len):
-        return [0]*(desired_len - len(some_list)) + list(some_list)
-
+    # def pad_or_truncate(self,some_list, desired_len):
+    #     return [0]*(desired_len - len(some_list)) + list(some_list)
+    def pad_or_truncate(self,some_list, target_len):
+        return some_list[:target_len] + [0]*(target_len - len(some_list))
 
     def align_peaks(self,peak_pos,energy=None,spec_set = None,plotflag = True):
 
@@ -413,6 +420,7 @@ class SonnySpectra:
             axs[0].plot(self.energy,self.df.corr()[par].iloc[0:self.spectra.shape[1]].values)
             axs[0].plot(emax,pmax,'x',markersize = 15)
             axs[0].set_xlabel('B.E. (eV)',fontsize = 14)
+            axs[0].set_title(par,fontsize = 14)
 
             t = self.df.corr()[par].iloc[0:self.spectra.shape[1]].values
             sc = axs[1].scatter(self.energy,self.spectra.mean(axis=0),c=t,cmap=cm.bwr, vmin=-1, vmax=1, s=100)
