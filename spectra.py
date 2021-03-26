@@ -43,21 +43,8 @@ class spectra:
 
         Parameters
         ----------
-        func : callable
-            Function to be wrapped.
-        independent_vars : list of str, optional
-            Arguments to func that are independent variables (default is None).
-        param_names : list of str, optional
-            Names of arguments to func that are to be made into parameters
-            (default is None).
-        nan_policy : str, optional
-            How to handle NaN and missing values in data. Must be one of
-            'raise' (default), 'propagate', or 'omit'. See Note below.
-        prefix : str, optional
-            Prefix used for the model.
-        name : str, optional
-            Name for the model. When None (default) the name is the same as
-            the model function (`func`).
+        sample_object=None,orbital=None,parameters=None,model=None,bg_info = None, pairlist=None,element_ctrl=None,\
+        spectra_name = None, BE_adjust = 0,load_spectra_object = False,load_model = False, autofit = False
         **kws : dict, optional
             Additional keyword arguments to pass to model function.
 
@@ -188,7 +175,7 @@ class spectra:
         # return self.esub, self.isub[i], self.bg[i], self.bgpars[i], self.area[i]
 
 
-    def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,update_with_prev_pars = False,\
+    def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,fit_in_reverse = False, update_with_prev_pars = False,\
         autofit = False):
 
 
@@ -197,6 +184,8 @@ class spectra:
             
         if specific_points is None:
             specific_points = np.arange(len(self.I))
+        if fit_in_reverse == True:
+            specific_points = specific_points[::-1]
 
         if track:
             pbar = tqdm(total=len(specific_points))
