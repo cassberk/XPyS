@@ -57,7 +57,7 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         f[experiment_name].attrs['positions'] = sample_obj.positions  #prob want to change this eventually
     except:
         print('position')
-        f[experiment_name].attrs['positions'] = 'Not Specified'
+        # f[experiment_name].attrs['positions'] = 'Not Specified'
         
     #json dictionaries
     try:
@@ -163,7 +163,7 @@ def save_spectra_analysis(spectra_obj,filepath = None, experiment_name = None,fo
             f[experiment_name][spectra].create_dataset('fit_results', data=data_temp)
         except:
             print('couldnt fit results')
-            f[experiment_name][spectra].create_dataset('fit_results',data = 'Not Specified')
+            # f[experiment_name][spectra].create_dataset('fit_results',data = 'Not Specified')
 
         ##################################
         # Model and model attributes
@@ -173,7 +173,7 @@ def save_spectra_analysis(spectra_obj,filepath = None, experiment_name = None,fo
             f[experiment_name][spectra].create_dataset('mod', data=data_temp)
         except:
             print(spectra,'couldnt save','mod')
-            f[experiment_name][spectra].create_dataset('mod',data = 'Not Specified')
+            # f[experiment_name][spectra].create_dataset('mod',data = 'Not Specified')
             
         #Params attribute
         try:
@@ -181,7 +181,7 @@ def save_spectra_analysis(spectra_obj,filepath = None, experiment_name = None,fo
             f[experiment_name][spectra]['mod'].attrs['params'] = data_temp
         except:
             print(spectra,'couldnt save','params')
-            f[experiment_name][spectra]['mod'].attrs['params']= 'Not Specified'
+            # f[experiment_name][spectra]['mod'].attrs['params']= 'Not Specified'
 
         # Other Attributes   
         attributes = ('element_ctrl','orbital','pairlist','parent_sample','prefixlist')
@@ -190,7 +190,7 @@ def save_spectra_analysis(spectra_obj,filepath = None, experiment_name = None,fo
                 f[experiment_name][spectra]['mod'].attrs[attr] = spectra_obj.__dict__[attr]
             except:
                 print('couldnt',attr)
-                f[experiment_name][spectra]['mod'].attrs[attr] = 'Not Specified'
+                # f[experiment_name][spectra]['mod'].attrs[attr] = 'Not Specified'
 
         ##################################
         # thickness
