@@ -280,6 +280,12 @@ def write_vamas_to_hdf5(vamas_obj, hdf5file):
 
 def load_sample(filepath = None, experiment_name = None):
 
+    if experiment_name is None:
+        with h5py.File(filepath,'r') as f:
+            experiment_options = [exp for exp in f.keys()]
+        print('You must choose an experiment, The options are: ',experiment_options)
+        return
+
     sample_obj = xps_peakfit.sample.sample(overview=False)
     sample_obj.load_path = filepath
     sample_obj.experiment_name = experiment_name
@@ -371,11 +377,11 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
             print('couldnt',data)
             pass
 
-    try:
-        spectra_obj.parent_sample = f[experiment_name][spec].attrs['parent_sample']
-    except:
-        print('couldnt parent_sample')
-        pass
+    # try:
+    #     spectra_obj.parent_sample = f[experiment_name][spec].attrs['parent_sample']
+    # except:
+    #     print('couldnt parent_sample')
+    #     pass
 
     ##################################
     #Background Subtraction data and parameters
