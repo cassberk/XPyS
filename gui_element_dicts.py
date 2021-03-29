@@ -190,6 +190,15 @@ element_refpos['O1_'] = 530
 element_refpos['O2_'] = 533
 element_refpos['O3_'] = 536.5
 
+### AlN
+element_text['AlN_32_'] = '$AlN$'
+element_text['AlO_32_'] = '$AlO$'
+
+element_color['AlN_32_'] = 'purple'
+element_color['AlO_32_'] = 'indigo'
+
+element_refpos['AlN_32_'] = 74.3
+element_refpos['AlO_32_'] = 75
 
 ### Flourine
 element_text['F_'] = '$F1s$'
