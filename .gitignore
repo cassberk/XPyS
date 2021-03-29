@@ -147,3 +147,4 @@ dmypy.json
 .DS_Store
 TODO.txt
 dev/
+example_notebooks/
