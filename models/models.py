@@ -74,3 +74,41 @@ def model_list(startpath = None):
                 result.append(file.split('.')[-2])
                 # print(file.split('.')[-2])
     return result
+
+
+def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
+
+    with h5py.File(model_name+'.hdf5','w') as f:
+
+        mod_attr = ('params','mod')
+        dt = h5py.special_dtype(vlen=str) 
+
+        # params
+        try:
+            dt = h5py.special_dtype(vlen=str)
+            data_temp = np.asarray([pars.dumps()], dtype=dt)
+            f.create_dataset('params', data=data_temp)
+        except:
+            print(model_name,'couldnt save params')
+
+        # model
+        try:
+            data_temp = np.asarray([mod.dumps()], dtype=dt) 
+            f.create_dataset('mod', data=data_temp)
+        except:
+            print(model_name,'couldnt save model')
+
+        # pairlist
+        try:
+#             dt = h5py.special_dtype(vlen=str)
+#             plist = np.asarray([pair for pair in pairlist], dtype=dt) 
+            f.attrs['pairlist'] = pairlist
+        except:
+            print(model_name,'couldnt save pairlist')
+
+
+        # element_ctrl
+        try:
+            f.attrs['element_ctrl'] = element_ctrl
+        except:
+            print(model_name,'couldnt save element_ctrl')
