@@ -53,7 +53,16 @@ class autofit:
                     guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2])
                 elif len(self.autofit_pars[par]) ==4:
                     guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2]) + np.float(self.autofit_pars[par][3])
-                
+
+            elif self.autofit_pars[par][0] == 'linadj':
+                amp,cen = guess_from_data(x= self.energy, y = self.intensity,peakpos = np.float(self.autofit_pars[par][1]))
+                idx = index_of(self.energy, cen)
+
+                if len(self.autofit_pars[par]) == 3:
+                    guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2])
+                elif len(self.autofit_pars[par]) ==4:
+                    guessamp[par] = self.intensity[idx]*np.float(self.autofit_pars[par][2]) + np.float(self.autofit_pars[par][3])
+
             elif self.autofit_pars[par][0] == 'log':
                 idx = index_of(self.energy, np.float(self.autofit_pars[par][1]))
                 
@@ -68,6 +77,12 @@ class autofit:
                 #  guessamp[par] = c
                 guessamp[par] = np.float(self.autofit_pars[par][1])
 
+            elif self.autofit_pars[par][0] == 'guess':
+                a,c = guess_from_data(self.energy,self.intensity,peakpos = np.float(self.autofit_pars[par][1]))
+                print(c)
+                #  guessamp[par] = c
+                guessamp[par] = np.float(c)
+                
         self.guess_pars = guessamp
 
 

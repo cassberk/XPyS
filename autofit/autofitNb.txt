@@ -1,4 +1,6 @@
-Nb_52_amplitude lin 202.5 1.484 -1677.207
+Nb_52_amplitude linadj 202.5 1.484 -1677.207
 Nb2O5_52_amplitude lin 210.4 1.928 11844.367
 NbO_52_amplitude lin 206.1 0.302 -501.985
 NbO2_52_amplitude lin 206.2 0.459 6775.128
+Nb_52_center guess 202.5
+Nb2O5_52_center guess 207.7
