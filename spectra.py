@@ -91,7 +91,7 @@ class spectra:
         self.bg_info = bg_info
         self.BE_adjust = BE_adjust
         self.spectra_name = spectra_name        
-
+        self.orbital = orbital
     def load_experiment_spectra_from_vamas(self, vamas_obj,orbital = None):
         print(orbital)
         self.orbital = orbital
