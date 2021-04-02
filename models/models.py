@@ -1,6 +1,8 @@
 import h5py
+import json
 import lmfit as lm
 import os
+import numpy as np
 
 def find_files(filename, search_path):
     result = []
@@ -74,6 +76,13 @@ def model_list(startpath = None):
                 result.append(file.split('.')[-2])
                 # print(file.split('.')[-2])
     return result
+
+
+def dumper(obj):
+    try:
+        return obj.toJSON()
+    except:
+        return obj.tolist()
 
 
 def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
