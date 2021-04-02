@@ -9,7 +9,7 @@ def index_of(arr, val):
         return 0
     return np.abs(arr-val).argmin()
 
-def guess_from_data(x,y, negative, peakpos, lims=2, ampscale=1.0, sigscale=1.0):
+def guess_from_data(x,y, peakpos, lims=2, ampscale=1.0, sigscale=1.0):
     """Estimate amp, cen, sigma for a peak, create params."""
     if x is None:
         return 1.0, 0.0, 1.0
