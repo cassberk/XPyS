@@ -418,16 +418,17 @@ class SonnySpectra:
         if plotflag:
             fig,axs = plt.subplots(1,2,figsize = (12,4))
             axs[0].plot(self.energy,self.df.corr()[par].iloc[0:self.spectra.shape[1]].values)
-            axs[0].plot(emax,pmax,'x',markersize = 15)
+            axs[0].plot(emax,pmax,'x',marker = 'x',markersize = 15,mew = 5,color = 'black')
             axs[0].set_xlabel('B.E. (eV)',fontsize = 14)
             axs[0].set_title(par,fontsize = 14)
 
             t = self.df.corr()[par].iloc[0:self.spectra.shape[1]].values
             sc = axs[1].scatter(self.energy,self.spectra.mean(axis=0),c=t,cmap=cm.bwr, vmin=-1, vmax=1, s=100)
-            axs[1].set_xlabel('B.E. (eV)',fontsize = 14)
+            specmax_idx = index_of(self.energy,emax)
+            axs[1].plot(emax,self.spectra.mean(axis=0)[specmax_idx],marker = 'x',markersize = 15,mew = 5,color = 'black')
             fig.colorbar(sc,ax=axs[1])
             
-        return pmax,emax
+        return pmax,emax,fig,axs
 
     def par_corr(self,Xs,Ys):
         fig, axs = plt.subplots(len(Ys),len(Xs),figsize = (4*len(Xs),4*len(Ys)))
@@ -467,6 +468,7 @@ class SonnySpectra:
 
         fig.tight_layout()
 
+        return fig, axs
 
     def find_linautofit(self,Xs,Ys,plotflag = True):
         # We can rewrite the line equation as y = Ap, where A = [[x 1]] and p = [[m], [b]]
@@ -486,9 +488,9 @@ class SonnySpectra:
             autofitparlist.append(' '.join([Ys[i],'lin',str(np.round(Xs[i],1)),str(np.round(m,3)),str(np.round(b,3))]))
 
             if plotflag == True:
-                axs[i].plot(x, y, 'o')
+                axs[i].plot(x, y,'o')
                 axs[i].plot(x, m*x+b)
                 axs[i].set_xlabel(str(np.round(Xs[i],2))+' vs '+str(Ys[i]),fontsize = 14)
                 fig.tight_layout()
 
-        return autofitparlist
+        return autofitparlist, fig, axs
