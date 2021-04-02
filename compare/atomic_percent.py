@@ -42,7 +42,10 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
             if idx is None:
                 at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent.mean()
                 at_pct_err = 100*sample[1].__dict__[spectra[1]].atomic_percent.std()
-            else:
+            elif type(idx[0]) is list:
+                at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx[0][0]:idx[0][1]].mean()
+                at_pct_err = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx[0][0]:idx[0][1]].std()            
+            elif type(idx[0]) is int:
                 at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx]
                 at_pct_err = 0
                 
@@ -74,7 +77,7 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
 
     _ax.grid() 
 
-    return fig, ax
+    return _fig, _ax
 
 
 def compare_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = None, specify_names = None, recalc = False,\
