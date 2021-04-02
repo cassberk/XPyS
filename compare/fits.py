@@ -114,7 +114,7 @@ def fit_spectogram(input_samples,sputter_time = None,specify_scans = None, sigma
 
             elif not multiple_samples:
                 # axes[j].set_title(scan)
-
+                axes[j].set_title(scan,fontsize = 40)
                 for ax in axes:
                     ax.tick_params('x',labelrotation=80)
                     # ax.set_xlabel('Binding Energy (eV)',fontsize = 18,labelpad=20)
