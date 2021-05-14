@@ -20,7 +20,7 @@ from IPython import embed as shell
 class sample:
 
     def __init__(self,dataload_obj = None ,bkgrd_subtraction_dict = None, data_dict_idx = None, overview = True, sputter_time = None, offval=0, plotflag = True, plotspan = True,\
-        plot_legend = None,normalize_subtraction = False,name = None,spectra_colors = None,load_derk = False, **kws):
+        plot_legend = None,normalize_subtraction = False,name = None,spectra_colors = None, **kws):
         """Class for holding the spectra objects taken on a sample
 
         All of the elemental spectra will be stored in this sample object. There is 
@@ -89,10 +89,7 @@ class sample:
             self.spectra_colors = spectra_colors
 
 
-        if load_derk ==True:
-            self.load_derk_sample_object(dataload_obj)
-
-        elif type(dataload_obj) == xps_peakfit.VAMAS.VAMASExperiment:
+        if type(dataload_obj) == xps_peakfit.VAMAS.VAMASExperiment:
             self.load_experiment_sample_from_vamas(dataload_obj)
 
         elif (type(dataload_obj) == str) or (type(dataload_obj) == dict):
@@ -155,7 +152,7 @@ class sample:
 
 
     ####
-    def xps_overview(self,subpars = None, plotflag = True, plotspan = True):
+    def xps_overview(self,subpars = None, plotflag = True, plotspan = True,analyze = True):
         """Returns an overview of the spectra that are held in sample.
 
        The overview plots all of the raw signals, the background subtracted
@@ -163,13 +160,21 @@ class sample:
 
         Parameters
         ----------
+        subpars : dict
+            Optional: ability to enter custom background subtraction parameters. If
+            None it will use the default in the config file.
+        plotflag : bool
+            option to plot or not
+        plotspan : bool
+            If True it will highlight on the plot the range that is backgroudn subtracted
+        analyze : bool
+            Choose whether or not to calculate the background subtraction and atomic percent
+            or to just plot what was loaded
 
         Returns
         -------
         matplotlib figures : fig
            Multi-plot plots of the data.
-        ipython widgets : widgets
-            for interactively saving the plots
 
         See Also
         --------
@@ -179,8 +184,10 @@ class sample:
         if subpars != None:
             for orb in subpars.keys():
                 self.bg_info[orb] = subpars[orb]
-        self.bg_sub_all()
-        self.calc_atomic_percent()
+
+        if analyze == True:
+            self.bg_sub_all()
+            self.calc_atomic_percent()
         self.plotflag = plotflag
 
         if self.plotflag == True:
@@ -213,7 +220,9 @@ class sample:
         """        
         for spectra in self.element_scans:
             if not spectra in ['XPS','Valence','vb','Survey']:
+                print(self.bg_info[spectra])
                 self.__dict__[spectra].bg_sub(subpars = self.bg_info[spectra])
+                self.bg_info[spectra] = self.__dict__[spectra].bg_info
 
 
     def calc_atomic_percent(self, specify_spectra = None):
@@ -235,15 +244,21 @@ class sample:
 
 
 
-
-
-
-
-
-
     ### Plotting functions
     def plot_all_spectra(self,offval=0, plotspan=False, saveflag=0,filepath = '',fig = None,ax = None,figdim = None,done_it = False):
+        """Plots all of the raw spectra data in the sample object. It will plot the spectra from highest to lowest binding energy
+        
 
+        Parameters
+        ----------
+
+        Returns
+        -------
+        matplotlib figure : fig
+        dict : matplotlib axes 
+           Subplots of all the Raw spectra data. Keys are the orbital names. values are the matplotlib axes object
+
+        """
 
         if (fig is None) and (ax is None):
             if figdim is None:
@@ -259,7 +274,6 @@ class sample:
 
             ax = {orb[1]:ax[orb[0]] for orb in enumerate(orderlist)}
 
-        # print(len(ax))
         
         for spectra in self.all_scans:
             for i in range(len(self.__dict__[spectra].I)):
@@ -294,6 +308,22 @@ class sample:
             
             
     def plot_all_sub(self,offval=0):
+        """Plots all of the background subtracted spectra
+
+        Parameters
+        ----------
+        offval : int,float
+            Will stack each spectra by offval value
+
+        Returns
+        -------
+        matplotlib figures : fig
+           Multi-plot plots of the data.
+
+        See Also
+        --------
+        :func: plot_all_spectra(), plot_all_sub(), plot_atomic_percent()
+        """
 
         fig,ax = plt.subplots(int(np.ceil(len(self.element_scans)/2)) ,2, figsize = (15,15))
         ax = ax.ravel()
@@ -341,7 +371,24 @@ class sample:
 
 
     def plot_atomic_percent(self, infig = None, inax = None, **pltkwargs):
-        
+        """Plots the atomic percent
+
+        Parameters
+        ----------
+        infig: matplotlib.fig
+           Pass in a figure to plot multiple samples on same graph
+        inax: matplotlib.axes
+           Pass in axes to plot multiple samples on same graph
+
+        Returns
+        -------
+        matplotlib figures : fig
+           Multi-plot plots of the data.
+
+        See Also
+        --------
+        :func: plot_all_spectra(), plot_all_sub(), plot_atomic_percent()
+        """
         if (infig == None) and (inax == None):
             fig, ax = plt.subplots(figsize = (18,8))
         else:
@@ -365,8 +412,7 @@ class sample:
             ax.set_xlabel('Position',fontsize = 30)
         ax.set_ylabel('Atomic Percent',fontsize = 30)
 
-        ax.tick_params(labelsize=8)
-        ax.tick_params(labelsize=8)
+        ax.tick_params(labelsize=20)
 
         ax.set_xticks(x)
         ax.set_ylim(ymin = 0)
