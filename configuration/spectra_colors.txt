@@ -1,7 +1,7 @@
 Al2p darkred
-O1s blue
+O1s red
 C1s teal
-N1s red
+N1s blue
 F1s green
 Mo3d yellow
 Si2p purple

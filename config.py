@@ -9,14 +9,14 @@ datarepo = {
 
 # This background subtraction dictrionary is set up as follows:
 # the element is the key, then the list elements are
-# 1. background subtraction limits
-# 2. type of backgroudn subtraction
-# if 2 is UT2 then
-# 3. the starting parameters for the UT2 filt
-# 4. the indices to fit
+# 0. background subtraction limits
+# 1. type of backgroudn subtraction
+# if 1. is UT2 then
+# 2. the starting parameters for the UT2 filt
+# 3. the indices to fit
 bkgrd_subtraction = {
     'Si2p': [(98.0, 106.5), 'linear'],
-    'Ti2p': [(452.5, 470), 'UT2', (681, 1, 355, 0), (0, -1)],
+    'Ti2p': [(520, 525), 'UT2', (681, 1, 355, 0), (0, -1)],
     'Cr2p': [(570, 590), 'linear'],
     'O1s': [(527,536), 'linear'],
     'N1s': [(395, 401), 'shirley'],
