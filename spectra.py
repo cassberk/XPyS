@@ -17,6 +17,8 @@ import lmfit as lm
 
 import sys
 import xps_peakfit
+import xps_peakfit.config as cfg
+import xps_peakfit.models.models as xpsmodels
 from xps_peakfit import bkgrds as backsub
 from xps_peakfit.helper_functions import *
 from xps_peakfit.gui_element_dicts import *
@@ -30,61 +32,54 @@ from IPython import embed as shell
 
 class spectra:
 
-    def __init__(self,sample_object=None,orbital=None,parameters=None,model=None,bg_info = None, pairlist=None,element_ctrl=None,\
+    def __init__(self,orbital=None,model=None,bg_info = None, pairlist=None,element_ctrl=None,\
         spectra_name = None, BE_adjust = 0,load_spectra_object = False,load_model = False, autofit = False):
             # def __init__(self, func, independent_vars=None, param_names=None,
             #      nan_policy='raise', prefix='', name=None, **kws):
         """Class for holding spectra of a particular elemental scan
 
-        The model function will normally take an independent variable
-        (generally, the first argument) and a series of arguments that are
-        meant to be parameters for the model. It will return an array of
-        data to model some data as for a curve-fitting problem.
 
         Parameters
         ----------
-        sample_object=None,orbital=None,parameters=None,model=None,bg_info = None, pairlist=None,element_ctrl=None,\
-        spectra_name = None, BE_adjust = 0,load_spectra_object = False,load_model = False, autofit = False
+        orbital: str
+            The name of the orbital 
+        parameters=None,
+        model=None,
+        bg_info : list
+            list containing the background subtraction parameters
+            bg_info[0] : list
+                [lower_bg_bound, upper_bg_bound]
+            bg_info[1] : str
+                type of background subtraction
+            bg_info[2] : tuple
+                If this exists it is the parameters for fitting the background using the UT2 method
+                bg_info[2][0] : B tougaard parameter
+                bg_info[2][1] : bool, whether or not to vary B
+                bg_info[2][2] : C tougaard parameter
+                bg_info[2][3] : bool, whether or not to vary C               
+                
+        pairlist : list of tuples
+            In case of doublet the j-1/2 peak is linked to the j+1/2 peak. This binds the amplitudes of the 
+            different peaks for the fitting
+
+        element_ctrl: list
+            Referenced to the pairlist this list specifies the peaks that are to be fit, namely the j+1/2 peaks
+
+        spectra_name 
+        BE_adjust = 0,l
+        oad_spectra_object = False,
+        load_model = False, 
+        autofit = False
         **kws : dict, optional
-            Additional keyword arguments to pass to model function.
+           
 
         Notes
         -----
-        1. Parameter names are inferred from the function arguments,
-        and a residual function is automatically constructed.
-
-        2. The model function must return an array that will be the same
-        size as the data being modeled.
-
-        3. nan_policy sets what to do when a NaN or missing value is
-        seen in the data. Should be one of:
-
-           - 'raise' : Raise a ValueError (default)
-
-           - 'propagate' : do nothing
-
-           -  'omit' : drop missing data
+        
 
         Examples
         --------
-        The model function will normally take an independent variable (generally,
-        the first argument) and a series of arguments that are meant to be
-        parameters for the model.  Thus, a simple peak using a Gaussian
-        defined as:
 
-        >>> import numpy as np
-        >>> def gaussian(x, amp, cen, wid):
-        ...     return amp * np.exp(-(x-cen)**2 / wid)
-
-        can be turned into a Model with:
-
-        >>> gmodel = Model(gaussian)
-
-        this will automatically discover the names of the independent variables
-        and parameters:
-
-        >>> print(gmodel.param_names, gmodel.independent_vars)
-        ['amp', 'cen', 'wid'], ['x']
 
         """
 
@@ -92,18 +87,25 @@ class spectra:
         self.BE_adjust = BE_adjust
         self.spectra_name = spectra_name        
         self.orbital = orbital
+
     def load_experiment_spectra_from_vamas(self, vamas_obj,orbital = None):
         print(orbital)
         self.orbital = orbital
-        
-        # if not hasattr(self, 'spectra_name') == None:
-        #     self.spectra_name = self.parent_sample + '_' + self.orbital
-        # else:
-        #     self.spectra_name = spectra_name + '_' + self.orbital
             
         self.E = np.asarray([-1*block.abscissa() for block in vamas_obj.blocks if ''.join(block.species_label.split()) in [self.orbital]][0])
         self.I = np.asarray([block.ordinate(0)/(block.number_of_scans_to_compile_this_block * block.signal_collection_time) \
                 for block in vamas_obj.blocks if ''.join(block.species_label.split()) in [self.orbital]])
+
+
+    def load_model(self,model_name):
+
+        mod, pars, pairlist, el_ctrl = xpsmodels.load_model(model_name)
+        
+        self.mod = mod
+        self.params = pars
+        self.pairlist = pairlist
+        self.element_ctrl = el_ctrl
+
 
     ### Analysis functions
         
@@ -160,9 +162,7 @@ class spectra:
                     self.bg[i],self.isub[i] = backsub.Tougaard(result_tou.params, self.I[i],self.E)
                     self.bgpars[i] = result_tou.params
                     self.bg_info[2] = (result_tou.params['B'].value, result_tou.params['B'].vary,result_tou.params['C'].value,result_tou.params['C'].vary)
-                    # self.bg_info[2][1] = result_tou.params['B'].vary
-                    # self.bg_info[2][2] = result_tou.params['C'].value
-                    # self.bg_info[2][3] = result_tou.params['C'].vary
+
                 elif UT2_params != None:
                     
                     self.bg[i],self.isub[i] = backsub.Tougaard(UT2_params, self.I[i],self.E)
@@ -172,12 +172,12 @@ class spectra:
 
             self.area[i] = np.trapz( np.flip(self.isub[i]) , np.flip(self.esub) )
 
-        # return self.esub, self.isub[i], self.bg[i], self.bgpars[i], self.area[i]
 
 
     def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,fit_in_reverse = False, update_with_prev_pars = False,\
         autofit = False):
 
+        
 
         if not hasattr(self,"fit_results"):
             self.fit_results = [[] for i in range(len(self.I))]            
@@ -202,7 +202,11 @@ class spectra:
                 for par in self.autofit.guess_pars.keys():
                     self.params[par].value = self.autofit.guess_pars[par]
                     # self.par_guess_track[par].append(self.autofit.guess_pars[par])
-            self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
+            # self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
+
+            # Try using minimuzer class to make the funtion more flexible
+            fitter = lm.Minimizer(self.fcn2min,self.params,fcn_args = (self.esub, self.isub[i]))
+            self.fit_results[i] = fitter.minimize(method=fit_method)
 
             if update_with_prev_pars ==True:
                 self.params = self.fit_results[i].params.copy()
@@ -217,9 +221,15 @@ class spectra:
         print('%%%% Fitting done! %%%%')
         
         if plotflag:
-            self.plot_fitresults()
+            self.plot_fitresults(specific_points = specific_points)
         
-            
+
+
+    def fcn2min(self, params, x, data):
+        
+        data_pred = self.mod.eval(params,x = x)
+
+        return data_pred - data            
             
             
             
@@ -242,7 +252,7 @@ class spectra:
 
         # subplotrows =  math.ceil((len(self.plot_idx)/2))  
          
-        
+        print(len(plot_idx))
         
         if len(plot_idx) == 1:
         # if len(self.fit_results_idx) == 1:
@@ -263,26 +273,33 @@ class spectra:
                 print('Plotting fit_results')
                 if plot_with_background_sub == True:
                     bkgrd = self.bg[i] - self.bg[-1]
-                    axs.plot(self.fit_results[i].userkws['x'], self.isub[i] + bkgrd + offset,'o')
-                    axs.plot(self.fit_results[i].userkws['x'], self.fit_results[i].best_fit + bkgrd + offset)
+                    axs.plot(self.esub, self.isub[i] + bkgrd + offset,'o')
+                    axs.plot(self.esub, self.mod.eval(params = self.fit_results[i].params,x = self.esub) + bkgrd + offset)
                 else:
-                    axs.plot(self.fit_results[i].userkws['x'], self.isub[i] + offset,'o')
-                    axs.plot(self.fit_results[i].userkws['x'], self.fit_results[i].best_fit + offset)
+                    axs.plot(self.esub, self.isub[i] + offset,'o')
+                    axs.plot(self.esub, self.mod.eval(params = self.fit_results[i].params,x = self.esub) + offset)
 
                 for pairs in enumerate(self.pairlist):
 
                     if plot_with_background_sub == True:
 
                         bkgrd = self.bg[i] - self.bg[i][-1]
-                        p[pairs[0]] = axs.fill_between(self.fit_results[i].userkws['x'],\
-                                        sum([self.fit_results[i].eval_components()[comp] for comp in pairs[1]]) + \
+                        # p[pairs[0]] = axs.fill_between(self.fit_results[i].userkws['x'],\
+                        #                 sum([self.fit_results[i].eval_components()[comp] for comp in pairs[1]]) + \
+                        #                 bkgrd + offset, bkgrd + offset,\
+                        #                 color = hue[pairs[1][0]], alpha=0.3)
+
+                        p[pairs[0]] = axs.fill_between(self.esub,\
+                                        sum([self.mod.eval_components(params = self.fit_results[i].params,x=self.esub)[comp] for comp in pairs[1]]) + \
                                         bkgrd + offset, bkgrd + offset,\
                                         color = hue[pairs[1][0]], alpha=0.3)
                     else:
-                        p[pairs[0]] = axs.fill_between(self.fit_results[i].userkws['x'],\
-                                        sum([self.fit_results[i].eval_components()[comp] for comp in pairs[1]]) + offset, offset,\
+                        # p[pairs[0]] = axs.fill_between(self.fit_results[i].userkws['x'],\
+                        #                 sum([self.fit_results[i].eval_components()[comp] for comp in pairs[1]]) + offset, offset,\
+                        #                 color = hue[pairs[1][0]], alpha=0.3)
+                        p[pairs[0]] = axs.fill_between(self.esub,\
+                                        sum([self.mod.eval_components(params = self.fit_results[i].params,x = self.esub)[comp] for comp in pairs[1]]) + offset, offset,\
                                         color = hue[pairs[1][0]], alpha=0.3)
-
 
 
                     if ref_lines == True:
@@ -317,8 +334,8 @@ class spectra:
         
             for i in enumerate(plot_idx):
             # for i in enumerate(self.fit_results_idx):
-                axs[i[0]].plot(self.fit_results[i[1]].userkws['x'], self.isub[i[1]] + offset,'o')
-                axs[i[0]].plot(self.fit_results[i[1]].userkws['x'], self.fit_results[i[1]].best_fit + offset)
+                axs[i[0]].plot(self.esub, self.isub[i[1]] + offset,'o')
+                axs[i[0]].plot(self.esub, self.mod.eval(params = self.fit_results[i[0]].params,x = self.esub) + offset)
 
                 p = [[] for i in range(len(self.pairlist))]
                 fit_legend = [element_text[element[0]] for element in self.pairlist]
@@ -327,13 +344,13 @@ class spectra:
 
                     if plot_with_background_sub == True:
                         bkgrd = self.bg[i] - self.bg[-1]
-                        p[pairs[0]] = axs[i[0]].fill_between(self.fit_results[i[1]].userkws['x'],\
-                                        sum([self.fit_results[i[1]].eval_components()[comp] for comp in pairs[1]]) + \
+                        p[pairs[0]] = axs[i[0]].fill_between(self.esub,\
+                                        sum([self.mod.eval_components(params = self.fit_results[i[0]].params,x=self.esub)[comp] for comp in pairs[1]]) + \
                                         bkgrd + offset, y2 = bkgrd + offset*np.ones(len(self.esub)),\
                                         color = hue[pairs[1][0]], alpha=0.3)
                     else:
-                        p[pairs[0]] = axs[i[0]].fill_between(self.fit_results[i[1]].userkws['x'],\
-                                                    sum([self.fit_results[i[1]].eval_components()[comp] for comp in pairs[1]]) + offset\
+                        p[pairs[0]] = axs[i[0]].fill_between(self.esub,\
+                                                    sum([self.mod.eval_components(params = self.fit_results[i[0]].params,x=self.esub)[comp] for comp in pairs[1]]) + offset\
                                                         ,y2 = offset*np.ones(len(self.esub)),\
                                                     color = hue[pairs[1][0]], alpha=0.3)
                     
@@ -359,8 +376,39 @@ class spectra:
 
 
 
+    def plot(self,spec_type = 'raw',specific_points = None, plot_with_background_sub = False, offset = 0):
+        
+        hue = cfg.spectra_colors()[self.orbital]
+
+        if specific_points == None:
+            points = range(len(self.I))
+        else:
+            points = specific_points
+
+        fig, ax = plt.subplots()
+
+        if spec_type == 'raw':
+            for i in points:
+                ax.plot(self.E,self.I[i]+i*offset,color = hue)
+
+        elif spec_type == 'sub':
+            for i in points:
+                ax.plot(self.esub,self.isub[i]+i*offset,color = hue)
 
 
+        ax.set_xlabel('Binding Energy (eV)',fontsize=24)
+        ax.set_ylabel('Counts/sec',fontsize=24)
+
+        if spec_type == 'raw':
+            ax.set_xlim(np.max(self.E),np.min(self.E))
+        elif spec_type == 'sub':
+            ax.set_xlim(np.max(self.esub),np.min(self.esub))
+        ax.tick_params(labelsize=20)
+
+        fig.tight_layout()
+        
+        
+        return fig, ax
 
 
 
