@@ -76,7 +76,7 @@ def thickness_residual(pars,x,data,error,transfer,EAL,obj_fun = 'Chi', split=Fal
 
 
 def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substrate=None,\
-    EAL=None,pars=None, fitting_alg = 'powell',obj_fun = 'S',specific_points = None,colors = None,fitflag = True,\
+    EAL=None,pars=None, fitting_alg = 'powell',obj_fun = 'S',specific_points = None,colors = None,fit_flag = True,\
         plotflag = True):
 
     if pars is None:
@@ -108,7 +108,7 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
 
 
     """Fit the thicknesses of NbOxides"""
-    if fitflag ==True:
+    if fit_flag ==True:
         # areas = np.empty([len(sample.pairlist),len(pts)])
 
         sample.fit_component = {key: np.empty(len(pts)) for key in [sample.pairlist[i][0] for i in range(len(sample.pairlist))]} 

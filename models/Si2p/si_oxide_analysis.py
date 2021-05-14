@@ -5,15 +5,28 @@ from xps_peakfit.gui_element_dicts import *
 
 def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiOx4_32_'],substrate='Si_32_',\
     S_oxide=1,S_substrate=1,EAL=2.84,specific_points = None,SFactors = None, plotflag = True):
-    """
-    Plots the thickness of each fit of the spectra object and then breaks the thickness into
+
+    """Plots the thickness of each fit of the spectra object and then breaks the thickness into
     the corresponding components making up the fit. This is not adjusted for the depth of each oxide 
     component. However, SFactors can be used to adjust the contribution from the different oxides.
+
+    Parameters
+    ----------
+
+
+    Returns
+    -------
+    matplotlib figures : fig
+        Multi-plot plots of the data.
+    matplotlib axes : ax
+        axes object
+    See Also
+    --------
+    
     """
 
 
     if specific_points == None:
-        # if hasattr(sample,'fit_results_idx'):
         pts = [j for j,x in enumerate(sample.fit_results) if x] 
         # else:
         #     pts = [j for j,x in enumerate(sample.params_full) if x] 
@@ -28,7 +41,6 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
     else:
         sfact = SFactors
 
-    # print(pts)
 
     areas = np.empty([len(sample.pairlist),len(pts)])
 
@@ -80,4 +92,5 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
 
         plt.legend(p,fit_legend,bbox_to_anchor=(0.9, 0.6, 0.0, 0.5),fontsize=20)
         plt.grid() 
+
         return fig, ax
