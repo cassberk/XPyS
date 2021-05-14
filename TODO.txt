@@ -5,4 +5,16 @@ fix spectra color dependency
 fix all gui_element_dict
 add error to bkgrd subpars not being in correct range
 
+Add Log
+golay to atomic percent
+survey element selection
+
 THere may be an issue with hdf5 storage the same files have different sizes (old and new structure)
+-atomic percent
+-bgusb
+
+Need to talk about what froce does in io.save_sample 
+
+Bgsub for tougaard getting stuck in minimum if B is too small
+
+non-neg matrix for spectra
