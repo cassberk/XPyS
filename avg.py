@@ -136,11 +136,11 @@ def read_avg(filepath):
     DATA['I'] = np.array(DATA['I'])
     DATA[eval(SPACEAXES['0']['symbol'])] = np.linspace(start,stop,interval)
     
-    if (int(SPACEAXES['1']['numPoints']),int(SPACEAXES['0']['numPoints'])) != np.array(DATA['I']).shape:
+    # if (int(SPACEAXES['1']['numPoints']),int(SPACEAXES['0']['numPoints'])) != np.array(DATA['I']).shape:
         
-        print((int(SPACEAXES['1']['numPoints']),int(SPACEAXES['0']['numPoints'])),np.array(DATA).shape)
-        print('AXES DO NOT MATCH DATA')
-        return
+    #     print((int(SPACEAXES['1']['numPoints']),int(SPACEAXES['0']['numPoints'])),np.array(DATA).shape)
+    #     print('AXES DO NOT MATCH DATA')
+    #     return
 
     return PROPERTIES, SPACEAXES, AXESDICT, DATA
                 
