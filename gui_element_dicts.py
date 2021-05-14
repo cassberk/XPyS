@@ -119,7 +119,7 @@ element_text['SiOx3_32_'] = '$Si^{3+}$'
 
 element_color['Si_32_'] = 'purple'
 element_color['SiOx4_32_'] = 'brown'
-element_color['SiOx1_32_'] = 'orange'
+element_color['SiOx1_32_'] = 'navajowhite'
 element_color['SiOx2_32_'] = 'orange'
 element_color['SiOx3_32_'] = 'yellow'
 
@@ -224,9 +224,9 @@ element_text['N1_'] = '$N1$'
 element_text['N2_'] = '$N2$'
 element_text['N3_'] = '$N3$'
 
-element_color['N1_'] = 'blue'
-element_color['N2_'] = 'green'
-element_color['N3_'] = 'teal'
+element_color['N1_'] = 'teal'
+element_color['N2_'] = 'blue'
+element_color['N3_'] = 'green'
 
 element_refpos['N1_'] = 399
 element_refpos['N2_'] = 401
