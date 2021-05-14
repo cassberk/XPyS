@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from xps_peakfit.gui_element_dicts import *
 import matplotlib.patches as mpatches
+import xps_peakfit.config as cfg
+
 
 def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = None, specify_names = None, \
     specify_spectra = None, fig = None, ax = None, capsize = 20):
@@ -11,6 +13,8 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
     #     lt = list(zip(sample_list[0],sample_list[1]))
 
     #     sample_list = [item for t in lt for item in t] 
+    if spectra_colors is None:
+        spectra_colors = cfg.spectra_colors()
 
     if (fig == None) and (ax == None):
         _fig, _ax = plt.subplots(figsize=(15,10))
@@ -43,8 +47,8 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
                 at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent.mean()
                 at_pct_err = 100*sample[1].__dict__[spectra[1]].atomic_percent.std()
             elif type(idx[0]) is list:
-                at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx[0][0]:idx[0][1]].mean()
-                at_pct_err = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx[0][0]:idx[0][1]].std()            
+                at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx[sample[0]][0]:idx[sample[0]][1]].mean()
+                at_pct_err = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx[sample[0]][0]:idx[sample[0]][1]].std()            
             elif type(idx[0]) is int:
                 at_pct = 100*sample[1].__dict__[spectra[1]].atomic_percent[idx]
                 at_pct_err = 0
@@ -62,7 +66,7 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
             xlabel_list = ['No Name' if label_list is None else label_list for label_list in [sample_list[i].sample_name for i in range(len(sample_list))]]
         else:
             xlabel_list = specify_names
-        _ax.set_xticklabels(xlabel_list,rotation = 80)
+        _ax.set_xticklabels(xlabel_list,rotation = 0)
 
         _ax.set_ylabel('Atomic Percent',fontsize=40);
 
@@ -124,7 +128,7 @@ def compare_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, 
         ax[spectra[0]].set_xticklabels(xlabel_list,rotation = 80)
         if spectra[0] == 0:
             ax[spectra[0]].set_ylabel('Atomic Percent',fontsize=20);
-        ax[spectra[0]].set_ylim([0,50])
+        ax[spectra[0]].set_ylim([0,70])
         ax[spectra[0]].grid() 
 
     patchlist = []    
