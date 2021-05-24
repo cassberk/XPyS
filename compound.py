@@ -26,7 +26,27 @@ from IPython import embed as shell
 class CompoundSpectra:
     
     def __init__(self,spectra_list):
-        
+        """Class for fitting an atomic compound accross multiple spectra
+
+        This class works a lot like the spectra class. The parameters are a single parameters
+        object comprising all the parameters from the individual spectra. The compound object
+        holds the spectra objects of interest. Although, they are also held by the sample
+        object.
+
+        Parameters
+        ----------
+        spectra_list: list
+            A list of all of the spectra objects to be combined into a compound object
+
+        Notes
+        -----
+
+
+        Examples
+        --------
+
+
+        """
         self.rsf = cfg.avantage_sensitivity_factors()
         self.element_scans = [spec.orbital for spec in spectra_list]
         
@@ -41,7 +61,9 @@ class CompoundSpectra:
         self.n_scans = len(self.__dict__[self.element_scans[0]].isub)
         
     def add_spectra_params(self,spectra):
-
+        """Function for adding the parameters into a single parameter object as well
+        as adding the spectra object to the compound object
+        """
         self.params.update(spectra.params)
         self.__dict__[spectra.orbital] = spectra
         
@@ -88,7 +110,13 @@ class CompoundSpectra:
 
         Examples
         --------
-        
+        This example links the Ti2p and the N1s to form a TiN compound. It also links the 
+        O1s and the Ti2p to form TiO2
+
+        compound_example = CompoundSpectra([sample.N1s,sample.Ti2p,sample.O1s])
+        compound_example.link({'N1s':'N2_amplitude'},{'Ti2p':'TiN_32_amplitude'},1)
+        compound_example.link({'N1s':'N3_amplitude'},{'Ti2p':'TiN_shk32_amplitude'},1)
+        compound_example.link({'O1s':'O1_amplitude'},{'Ti2p':'TiO2_32_amplitude'},2) 
         """
          
         
@@ -135,8 +163,39 @@ class CompoundSpectra:
         print(self.params[comp2].expr)
         
         
-    def fit(self,fit_method = 'powell',specific_points = None,plotflag = False, track = False, fit_in_reverse = False,update_with_prev_pars = False, autofit = False):
+    def fit(self,fit_method = 'powell',specific_points = None,plotflag = True, track = False, fit_in_reverse = False,update_with_prev_pars = False, autofit = False):
+        """Function to fit the spectra to the model held by the spectra object
+
+
+        Parameters
+        ----------
+        fit_method: str
+            Fitting Method. See the documentation of different fitting methods in lmfit documentation
+        specific_points: list
+            list of the data to fit
+        plotflag: bool
+            Wether or not to plot the fits
+        track: bool
+            Whether or not to track the progress using a progress bar
+        fit_in_reverse: bool
+            Fit the spectra in reverse. This will also fit the specific_points in reverse if they are speciallized
+            This is useful if you are using update_with_prev_pars and want to fit a depth profile where some spectra 
+            are prevalent towards the end and others at the beginning.
+        update_with_prev_pars: bool
+            Update the params object with the fit_results[i].params from the previous fit. This is useful for fitting lots
+            of spectra since if spectra are slowly changing eventually the params will not be a good starting point.
+        autofit: bool
+            Whether or not to use autofit on a specific spectra. Need to set it up in the autofit module.
+
+        Notes
+        -----
         
+
+        Examples
+        --------
+
+
+        """     
         
         if not hasattr(self,"fit_results"):
             self.fit_results = [[] for i in range(self.n_scans)]           
@@ -155,22 +214,24 @@ class CompoundSpectra:
             self.fit_results[i] = fitter.minimize(method=fit_method)
         
         self._copy_to_spectra()
-        
+
+        if plotflag:
+            self.plot_fitresults(specific_points = specific_points)
+
     def fcn2min(self,params, data):
-    
+        """function to be minimized"""
         i = 0
         for spec in self.element_scans:
-            
             if i == 0:
                 data_pred = self.__dict__[spec].mod.eval(params,x = self.__dict__[spec].esub)
             else:
                 data_pred = np.append(data_pred,self.__dict__[spec].mod.eval(params,x = self.__dict__[spec].esub))
             i+=1
-
         return data_pred - data
     
-    def _copy_to_spectra(self):
 
+    def _copy_to_spectra(self):
+        """copy thefit results and the parameters to the spectra objects"""
         for spec in self.element_scans:
             self.__dict__[spec].fit_results = dc(self.fit_results)
             self.__dict__[spec].params = self.params.copy()
@@ -230,10 +291,6 @@ class CompoundSpectra:
 
                     if ref_lines == True:
                         axs[i].axvline(x = element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
-
-
-
-
 
                 axs[i].set_xlabel('Binding Energy (eV)',fontsize=30)
                 axs[i].set_xlim(np.max(spectra.esub),np.min(spectra.esub))
