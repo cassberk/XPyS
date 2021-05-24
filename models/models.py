@@ -3,6 +3,8 @@ import json
 import lmfit as lm
 import os
 import numpy as np
+from xps_peakfit.helper_functions import *
+from lmfit.models import GaussianModel, LorentzianModel, PseudoVoigtModel, SkewedVoigtModel
 
 def find_files(filename, search_path):
     result = []
@@ -121,3 +123,153 @@ def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
             f.attrs['element_ctrl'] = element_ctrl
         except:
             print(model_name,'couldnt save element_ctrl')
+
+
+jprefix = {'1s':['_','_'],'2p':['_32_','_12_'],'3d':['_52_','_32_']}
+jratio = {'1s':['',''],'2p':'(1/2)','3d':'(2/3)'}
+
+class SpectraModel(lm.Model):
+    
+    def __init__(self,orbital,name='',pars = None,SO_split=None, xdata = None, ydata = None,n_comps = 1):
+        """Build a Model to fit the spectra
+
+        Parameters
+        ----------
+        orbital: str
+            string of orbital to model: 1s,2p,3d or 4f
+            
+        name: string,list
+            name of the compound being modeled. This will become a prefix to all of the model parameters
+            If this is left empty and there are more than one components specified, then the prefix will be 
+            comp0, comp1, ... comp(n-1) where n is n_comps.
+            If a list is specified then each element in the list will be the prefix name for each component.
+            
+        pars: lmfit parameter object (ordered dict)
+            lmfit parameter object used to fit the model
+            
+        SO_split: str
+            spin orbit splitting of the doublet
+        
+        xdata: array
+            Binding Energy data
+            
+        ydata: array
+            Intensity count data
+            
+        sigma: float
+            sigma of model peak, default is 0.6
+           
+
+        Notes
+        -----
+
+
+        Examples
+        --------
+        """
+
+        self.pars = pars
+        self.orbital = orbital
+        self.xdata = xdata
+        self.ydata = ydata
+        self.model_type = []
+
+        if (type(name) is list and len(name) != n_comps):
+            raise ValueError('The number of prefixes in name does not match the number of components in n_comp')
+
+        if (not type(name) is list and name == ''):
+            name = ['comp'+str(i) for i in range(n_comps)]
+        elif (not type(name) is list and name != ''):
+            name = [name+str(i) for i in range(n_comps)]
+        
+        if self.orbital == '1s':
+            for i in range(n_comps):
+                self.singlet(orbital=orbital,name = name[i],pars = self.pars)
+        else:
+            if SO_split is None:
+                raise ValueError('You Must specify a spin orbit splitting for the doublet')
+            if xdata is None:
+                raise ValueError('Need xdata')
+            if ydata is None:
+                raise ValueError('Need ydata')
+            for i in range(n_comps):
+                self.doublet(orbital=orbital,name=name[i],pars = self.pars,SO_split=SO_split, xdata = xdata, ydata = ydata)
+
+    
+    def doublet(self,orbital,name='',pars = None,SO_split=0.44,sigma = 0.6,center = None):
+        peak1_prefix = name + jprefix[orbital][0]
+        peak2_prefix = name + jprefix[orbital][1]
+        
+        if self.pars is None:
+            self.pars = lm.Parameters()      
+        peak1 = PseudoVoigtModel(prefix = peak1_prefix)
+        peak2 = PseudoVoigtModel(prefix = peak2_prefix)
+        
+        if center is None:
+            center = self.xdata[index_of(self.ydata, np.max(self.ydata))]
+        
+        self.pars.update(peak1.make_params())
+        self.pars.update(peak2.make_params())
+        
+        self.pars[peak1_prefix + 'amplitude'].set(np.max(self.ydata),min = 0,vary = 1)
+        self.pars[peak1_prefix + 'center'].set(center, vary=1)
+        self.pars[peak1_prefix + 'sigma'].set(sigma, vary=1)
+        self.pars[peak1_prefix + 'fraction'].set(0.05, vary=1)
+
+        self.pars[peak2_prefix + 'amplitude'].set(expr = jratio[orbital]+'*' + peak1_prefix + 'amplitude')
+        self.pars[peak2_prefix + 'center'].set(expr = peak1_prefix + 'center+' +str(SO_split))
+        self.pars[peak2_prefix + 'sigma'].set(expr = peak1_prefix + 'sigma')
+        self.pars[peak2_prefix + 'fraction'].set(expr = peak1_prefix + 'fraction')
+        
+        model = peak1 + peak2
+        if not hasattr(self,'model'):
+            self.model = model
+            self.pairlist = [(peak1_prefix,peak2_prefix)]
+            self.element_ctrl = [0]
+            self.model_type.append('doublet')
+        else:
+            self.model += model
+            self.pairlist.append((peak1_prefix,peak2_prefix))
+            if self.model_type[-1] == 'singlet':
+                next_ctrl_peak = self.element_ctrl[-1]+1
+            elif self.model_type[-1] == 'doublet':
+                next_ctrl_peak = self.element_ctrl[-1]+2
+            self.element_ctrl.append(next_ctrl_peak)
+            self.model_type.append('doublet')
+        
+    def singlet(self,orbital,name='',pars = None,sigma = 0.6,center = None):
+        peak1_prefix = name + jprefix[orbital][0]
+        
+        if self.pars is None:
+            self.pars = lm.Parameters()      
+        peak1 = PseudoVoigtModel(prefix = peak1_prefix)
+        
+        if center is None:
+            center = self.xdata[index_of(self.ydata, np.max(self.ydata))]
+        
+        self.pars.update(peak1.make_params())
+        
+        self.pars[peak1_prefix + 'amplitude'].set(np.max(self.ydata),min = 0,vary = 1)
+        self.pars[peak1_prefix + 'center'].set(center, vary=1)
+        self.pars[peak1_prefix + 'sigma'].set(sigma, vary=1)
+        self.pars[peak1_prefix + 'fraction'].set(0.05, vary=1)
+        
+        model = peak1
+        if not hasattr(self,'model'):
+            self.model = model
+            self.pairlist = [(peak1_prefix,)]
+            self.element_ctrl = [0]
+            self.model_type.append('singlet')
+        else:
+            self.model += model
+            self.pairlist.append((peak1_prefix,))
+            if self.model_type[-1] == 'singlet':
+                next_ctrl_peak = self.element_ctrl[-1]+1
+            elif self.model_type[-1] == 'doublet':
+                next_ctrl_peak = self.element_ctrl[-1]+2
+            self.element_ctrl.append(next_ctrl_peak)
+            self.model_type.append('singlet')
+                
+#     def __add__(self, other):
+#         """+"""
+#         return SpectraModel(self, other, operator.add)
