@@ -148,3 +148,6 @@ dmypy.json
 TODO.txt
 dev/
 example_notebooks/
+
+.ipynb
+
