@@ -176,7 +176,38 @@ class spectra:
 
     def fit(self,fit_method = 'powell',specific_points = None, plotflag = True, track = True,fit_in_reverse = False, update_with_prev_pars = False,\
         autofit = False):
+        """Function to fit the spectra to the model held by the spectra object
 
+
+        Parameters
+        ----------
+        fit_method: str
+            Fitting Method. See the documentation of different fitting methods in lmfit documentation
+        specific_points: list
+            list of the data to fit
+        plotflag: bool
+            Wether or not to plot the fits
+        track: bool
+            Whether or not to track the progress using a progress bar
+        fit_in_reverse: bool
+            Fit the spectra in reverse. This will also fit the specific_points in reverse if they are speciallized
+            This is useful if you are using update_with_prev_pars and want to fit a depth profile where some spectra 
+            are prevalent towards the end and others at the beginning.
+        update_with_prev_pars: bool
+            Update the params object with the fit_results[i].params from the previous fit. This is useful for fitting lots
+            of spectra since if spectra are slowly changing eventually the params will not be a good starting point.
+        autofit: bool
+            Whether or not to use autofit on a specific spectra. Need to set it up in the autofit module.
+
+        Notes
+        -----
+        
+
+        Examples
+        --------
+
+
+        """         
         
 
         if not hasattr(self,"fit_results"):
@@ -333,7 +364,6 @@ class spectra:
             axs = axs.ravel()
         
             for i in enumerate(plot_idx):
-            # for i in enumerate(self.fit_results_idx):
                 axs[i[0]].plot(self.esub, self.isub[i[1]] + offset,'o')
                 axs[i[0]].plot(self.esub, self.mod.eval(params = self.fit_results[i[0]].params,x = self.esub) + offset)
 
