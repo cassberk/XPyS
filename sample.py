@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 import xps_peakfit
 import xps_peakfit.spectra as sp
+from xps_peakfit.compound import CompoundSpectra
 import xps_peakfit.config as cfg
 import xps_peakfit.VAMAS
 import os
@@ -422,3 +423,7 @@ class sample:
 
         return fig, ax
 
+
+    # Compound Spectra Methods
+    def build_compound_spectra(self,name,spectra_list):
+        self.__dict__[name] = CompoundSpectra(spectra_list)
