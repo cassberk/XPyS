@@ -1,5 +1,6 @@
 import sys
-sys.path.append("/Users/cassberk/code/xps_peakfit/")
+import XPyS as xps
+sys.path.append("/Users/cassberk/code/XPyS/")
 import pandas as pd
 
 datarepo = {
@@ -32,10 +33,10 @@ bkgrd_subtraction = {
 
 
 def spectra_colors():
-    with open("/Users/cassberk/code/xps_peakfit/configuration/spectra_colors.txt", "r") as f:
+    with open("/Users/cassberk/code/XPyS/configuration/spectra_colors.txt", "r") as f:
         spectra_colors = {line.replace('\n','').split()[0]:line.replace('\n','').split()[1] for line in f.readlines() }
         return spectra_colors
 
 def avantage_sensitivity_factors():
-    dfSF = pd.read_excel(r'~/code/xps_peakfit/configuration/Sensitivity_Factors.xlsx', keep_default_na = False)#Do this better
+    dfSF = pd.read_excel(r'~/code/XPyS/configuration/Sensitivity_Factors.xlsx', keep_default_na = False)#Do this better
     return {dfSF['element'][dfSF['SF'] != ''].iloc[i] : dfSF['SF'][dfSF['SF'] != ''].iloc[i] for i in range(len(dfSF[dfSF['SF'] != '']))}

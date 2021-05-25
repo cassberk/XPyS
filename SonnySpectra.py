@@ -19,13 +19,13 @@ import pickle
 import lmfit as lm
 
 import sys
-import xps_peakfit
-from xps_peakfit import bkgrds as backsub
-from xps_peakfit.helper_functions import *
-from xps_peakfit.gui_element_dicts import *
-import xps_peakfit.config as cfg
-import xps_peakfit.VAMAS
-import xps_peakfit.autofit.autofit
+import XPyS as xps
+from xps import bkgrds as backsub
+from xps.helper_functions import *
+from xps.gui_element_dicts import *
+import xps.config as cfg
+import xps.VAMAS
+import xps.autofit.autofit
 import os
 import glob
 import h5py
@@ -54,7 +54,7 @@ class SonnySpectra:
                 with h5py.File(fpath,'r') as f:
                     exps = [k for k in f.keys()]
                     # print(file.split('/')[-1],exps[0])
-                    datadict[file.split('/')[-1].split('.')[0]] = xps_peakfit.io.load_spectra(filepath = fpath,experiment_name = exps[0],spec = spectra_name)
+                    datadict[file.split('/')[-1].split('.')[0]] = xps.io.load_spectra(filepath = fpath,experiment_name = exps[0],spec = spectra_name)
                     # f.close()
 
         self.spectra_objects = datadict

@@ -3,18 +3,18 @@ from IPython.display import display, clear_output
 
 import pandas as pd
 from copy import deepcopy as dc
-from xps_peakfit.helper_functions import *
-from xps_peakfit import bkgrds as backsub
-from xps_peakfit.avantage_io import load_excel
+import XPyS as xps
+from xps.helper_functions import *
+from xps import bkgrds as backsub
+from xps.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt
 
-import xps_peakfit
-import xps_peakfit.spectra as sp
-import xps_peakfit.config as cfg
-import xps_peakfit.models.models as mds
-import xps_peakfit.VAMAS
+import xps.spectra as sp
+import xps.config as cfg
+import xps.models.models as mds
+import xps.VAMAS
 import os
 
 class HellaSamples:
@@ -31,7 +31,7 @@ class HellaSamples:
         self.samples= {}
 
         for samplepath in pathlist:
-            samp = xps_peakfit.io.load_sample(filepath = os.path.join(cfg.datarepo['stoqd'],samplepath),\
+            samp = xps.io.load_sample(filepath = os.path.join(cfg.datarepo['stoqd'],samplepath),\
                                         experiment_name = experiment_name)
             self.samples[samp.sample_name] = samp
             

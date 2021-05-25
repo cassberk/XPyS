@@ -1,18 +1,18 @@
 # Try to load individual packages at some point
 import pandas as pd
 from copy import deepcopy as dc
-from xps_peakfit.helper_functions import *
-from xps_peakfit import bkgrds as backsub
-from xps_peakfit.avantage_io import load_excel
+import XPyS as xps
+from xps.helper_functions import *
+from xps import bkgrds as backsub
+from xps.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt
 
-import xps_peakfit
-import xps_peakfit.spectra as sp
-from xps_peakfit.compound import CompoundSpectra
-import xps_peakfit.config as cfg
-import xps_peakfit.VAMAS
+import xps.spectra as sp
+from xps.compound import CompoundSpectra
+import xps.config as cfg
+import xps.VAMAS
 import os
 from IPython import embed as shell
 
@@ -90,7 +90,7 @@ class sample:
             self.spectra_colors = spectra_colors
 
 
-        if type(dataload_obj) == xps_peakfit.VAMAS.VAMASExperiment:
+        if type(dataload_obj) == xps.VAMAS.VAMASExperiment:
             self.load_experiment_sample_from_vamas(dataload_obj)
 
         elif (type(dataload_obj) == str) or (type(dataload_obj) == dict):

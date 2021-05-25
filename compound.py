@@ -10,15 +10,15 @@ import pickle
 import lmfit as lm
 
 import sys
-import xps_peakfit
-import xps_peakfit.config as cfg
-import xps_peakfit.models.models as xpsmodels
-from xps_peakfit import bkgrds as backsub
-from xps_peakfit.helper_functions import *
-from xps_peakfit.gui_element_dicts import *
+import XPys as xps
+import xps.config as cfg
+import xps.models.models as xpsmodels
+from xps import bkgrds as backsub
+from xps.helper_functions import *
+from xps.gui_element_dicts import *
 
-import xps_peakfit.VAMAS
-import xps_peakfit.autofit.autofit
+import xps.VAMAS
+import xps.autofit.autofit
 import os
 import glob
 from IPython import embed as shell
