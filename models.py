@@ -3,6 +3,8 @@ import json
 import lmfit as lm
 import os
 import numpy as np
+import XPyS
+import XPyS.config as cfg
 from XPyS.helper_functions import *
 from lmfit.models import GaussianModel, LorentzianModel, PseudoVoigtModel, SkewedVoigtModel
 
@@ -18,7 +20,7 @@ def find_files(filename, search_path):
 
 def load_model(model):
     model_filename = model+'.hdf5'
-    model_filepath = find_files(model_filename,'/Users/cassberk/code/XPyS/models')
+    model_filepath = find_files(model_filename,os.path.join(cfg.package_location,'XPyS/saved_models'))
 
     if len(model_filepath) > 1:
         print('there are more than one files with that name',model_filepath)
@@ -68,7 +70,7 @@ def load_model(model):
 
 def model_list(startpath = None):
     if startpath is None:
-        start_dir = "/Users/cassberk/code/XPyS/models"
+        start_dir = os.path.join(cfg.package_location,"XPyS/saved_models")
     else:
         start_dir = startpath
     result = []
@@ -89,6 +91,9 @@ def dumper(obj):
 
 def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
 
+    if model_name.split('.')[-1] =='hdf5':
+        model_name = model_name.split('.')[0]
+        
     with h5py.File(model_name+'.hdf5','w') as f:
 
         mod_attr = ('params','mod')
@@ -124,24 +129,61 @@ def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
         except:
             print(model_name,'couldnt save element_ctrl')
 
-def save_spectra_model(spectra_model,name):
+def save_spectra_model(spectra_model,element = None,name = None,filepath = None):
     """Save a SpectraModel object to .hdf5
     Parameters
     ----------
     spectra_model : SpectraModel instance
         SpectraModel to be saved.
-    fname : str
-        Name of file for saved SpectraModel.
+    element: str
+        Element that is being modeled. For example: 'C' or 'Nb' or 'O'. This should be in line with what the 
+        instrument spits out. For instance, dont name a model for Nb, Niobium because then the model will be saved
+        in the Niobium3d folder, and other functionality will not work since the folder names rely on the way in which the
+        instrument exports the data. Perhaps it would be good to add a list of possible element names, but that is not
+        included yet
+    name : str
+        Name of the model. This can be anything and will be saved in the appropriate folder. 
+    filepath: str
+        The loation of the folder can be specified. However, this is not recommended because to fully use
+        the package and the GUI add ons the models should all be saved in the saved_models folder in the appropriately
+        named subfolders.
         
     """
-    model_to_hdf5(name,spectra_model.model,spectra_model.pars,spectra_model.pairlist,spectra_model.element_ctrl)
+    if (name is None and filepath is None):
+        raise NameError('You must either name the model or specify the filepath with the name as the last entry in the path')
+    if (not name is None and element is None):
+        raise NameError('You must specify the element. Ex: "C", "Nb" and "O"')
+    if (not name is None and not filepath is None):
+        raise NameError('You must choose either a name or a filepath')
 
+    model = spectra_model.model
+    pars = spectra_model.pars
 
-jprefix = {'1s':['_','_'],'2p':['_32_','_12_'],'3d':['_52_','_32_']}
-jratio = {'1s':['',''],'2p':'(1/2)','3d':'(2/3)'}
+    # singlets in tuples do not save using .hdf5. Need to add an empty string to the tuple to save.
+    pairlist = []
+    for pair in spectra_model.pairlist:
+        if len(pair) == 1:
+            pairlist.append((pair[0],''))
+        else:
+            pairlist.append(pair)
+            
+    element_ctrl = spectra_model.element_ctrl
+
+    if filepath is None:
+        model_folder = element+spectra_model.orbital
+        fpath = os.path.join(cfg.package_location,'XPyS/saved_models',model_folder,name)
+    else:
+        fpath = filepath
+    
+    model_to_hdf5(fpath,model,pars,pairlist,spectra_model.element_ctrl)
+    print('Saved model to: ',fpath)
+
 
 class SpectraModel(lm.Model):
-    
+
+    jprefix = {'1s':['_','_'],'2p':['_32_','_12_'],'3d':['_52_','_32_']}
+    jratio = {'1s':['',''],'2p':'(1/2)','3d':'(2/3)'}
+
     def __init__(self,orbital = None,name='',pars = None,SO_split=None, xdata = None, ydata = None,sigma = 0.6, n_comps = 1):
         """Build a Model to fit the spectra
 
@@ -230,7 +272,12 @@ class SpectraModel(lm.Model):
                 raise ValueError('Prefix must be a list with two elements for each doublet peakname')
             peak1_prefix = prefix[0]
             peak2_prefix = prefix[1]
-        
+
+        if peak1_prefix[-1] != '_':
+            peak1_prefix +='_'
+        if peak2_prefix[-1] != '_':
+            peak2_prefix +='_'
+
         if self.pars is None:
             self.pars = lm.Parameters()      
         peak1 = PseudoVoigtModel(prefix = peak1_prefix)
@@ -241,7 +288,7 @@ class SpectraModel(lm.Model):
         
         self.pars.update(peak1.make_params())
         self.pars.update(peak2.make_params())
-        # print(peak2_prefix+'amplitude')
+
         self.pars[peak1_prefix + 'amplitude'].set(np.max(self.ydata),min = 0,vary = 1)
         self.pars[peak1_prefix + 'center'].set(center, vary=1)
         self.pars[peak1_prefix + 'sigma'].set(sigma, vary=1)
@@ -273,7 +320,8 @@ class SpectraModel(lm.Model):
     def singlet(self,name,pars = None,sigma = 0.6,center = None):
         
         peak1_prefix = name
-
+        if peak1_prefix[-1] != '_':
+            peak1_prefix +='_'
         
         if self.pars is None:
             self.pars = lm.Parameters()      

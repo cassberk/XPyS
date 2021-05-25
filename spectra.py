@@ -97,10 +97,26 @@ class spectra:
                 for block in vamas_obj.blocks if ''.join(block.species_label.split()) in [self.orbital]])
 
 
-    def load_model(self,model_name):
+    def load_model(self,model_load):
+        """load the necessary components of a model into the spectra object. 
+        The model consists of a model, pairlist, params and element_ctrl
 
-        mod, pars, pairlist, el_ctrl = XPyS.models.load_model(model_name)
-        
+        Parameters
+        ----------
+        model_load:str,SpectraModel Instance
+            If this is a string you just need to specify the model name. The .hdf5 model will found in the saved_model folder.
+            If this is a SpectraModel Instance it will load the model,pairlist,pars and element_ctrl from the SpectraModel instance
+        """
+
+        if type(model_load) is str:
+            mod, pars, pairlist, el_ctrl = XPyS.models.load_model(model_load)
+
+        elif type(model_load) is XPyS.models.SpectraModel:
+            mod = model_load.model
+            pars = model_load.pars
+            pairlist = model_load.pairlist
+            el_ctrl = model_load.element_ctrl
+
         self.mod = mod
         self.params = pars
         self.pairlist = pairlist
