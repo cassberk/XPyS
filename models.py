@@ -3,7 +3,7 @@ import json
 import lmfit as lm
 import os
 import numpy as np
-from xps_peakfit.helper_functions import *
+from XPyS.helper_functions import *
 from lmfit.models import GaussianModel, LorentzianModel, PseudoVoigtModel, SkewedVoigtModel
 
 def find_files(filename, search_path):
@@ -18,7 +18,7 @@ def find_files(filename, search_path):
 
 def load_model(model):
     model_filename = model+'.hdf5'
-    model_filepath = find_files(model_filename,'/Users/cassberk/code/xps_peakfit/models')
+    model_filepath = find_files(model_filename,'/Users/cassberk/code/XPyS/models')
 
     if len(model_filepath) > 1:
         print('there are more than one files with that name',model_filepath)
@@ -68,7 +68,7 @@ def load_model(model):
 
 def model_list(startpath = None):
     if startpath is None:
-        start_dir = "/Users/cassberk/code/xps_peakfit/models"
+        start_dir = "/Users/cassberk/code/XPyS/models"
     else:
         start_dir = startpath
     result = []
@@ -124,13 +124,25 @@ def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
         except:
             print(model_name,'couldnt save element_ctrl')
 
+def save_spectra_model(spectra_model,name):
+    """Save a SpectraModel object to .hdf5
+    Parameters
+    ----------
+    spectra_model : SpectraModel instance
+        SpectraModel to be saved.
+    fname : str
+        Name of file for saved SpectraModel.
+        
+    """
+    model_to_hdf5(name,spectra_model.model,spectra_model.pars,spectra_model.pairlist,spectra_model.element_ctrl)
+
 
 jprefix = {'1s':['_','_'],'2p':['_32_','_12_'],'3d':['_52_','_32_']}
 jratio = {'1s':['',''],'2p':'(1/2)','3d':'(2/3)'}
 
 class SpectraModel(lm.Model):
     
-    def __init__(self,orbital,name='',pars = None,SO_split=None, xdata = None, ydata = None,n_comps = 1):
+    def __init__(self,orbital = None,name='',pars = None,SO_split=None, xdata = None, ydata = None,sigma = 0.6, n_comps = 1):
         """Build a Model to fit the spectra
 
         Parameters
@@ -142,7 +154,9 @@ class SpectraModel(lm.Model):
             name of the compound being modeled. This will become a prefix to all of the model parameters
             If this is left empty and there are more than one components specified, then the prefix will be 
             comp0, comp1, ... comp(n-1) where n is n_comps.
-            If a list is specified then each element in the list will be the prefix name for each component.
+            If a string is named then an int will be added to the end for each component.
+            If a list is specified then each element in the list will be the prefix name for each component. In
+            this case the length of the list and n_comps must be the same.
             
         pars: lmfit parameter object (ordered dict)
             lmfit parameter object used to fit the model
@@ -158,6 +172,9 @@ class SpectraModel(lm.Model):
             
         sigma: float
             sigma of model peak, default is 0.6
+
+        n_comps: int
+            number of singlets/doublets to add to model
            
 
         Notes
@@ -184,21 +201,35 @@ class SpectraModel(lm.Model):
         
         if self.orbital == '1s':
             for i in range(n_comps):
-                self.singlet(orbital=orbital,name = name[i],pars = self.pars)
-        else:
-            if SO_split is None:
-                raise ValueError('You Must specify a spin orbit splitting for the doublet')
+                self.singlet(name = name[i],pars = self.pars)
+        elif self.orbital in ['2p','3d','4f']:
             if xdata is None:
                 raise ValueError('Need xdata')
             if ydata is None:
                 raise ValueError('Need ydata')
             for i in range(n_comps):
-                self.doublet(orbital=orbital,name=name[i],pars = self.pars,SO_split=SO_split, xdata = xdata, ydata = ydata)
+                self.doublet(name=name[i],pars = self.pars,SO_split=SO_split)
 
     
-    def doublet(self,orbital,name='',pars = None,SO_split=0.44,sigma = 0.6,center = None):
-        peak1_prefix = name + jprefix[orbital][0]
-        peak2_prefix = name + jprefix[orbital][1]
+    def doublet(self,name = '',prefix = None, pars = None,SO_split=None,peak_ratio = None, sigma = 0.6,center = None):
+
+        if SO_split is None:
+            raise ValueError('You Must specify a spin orbit splitting for the doublet')
+        if (self.orbital == '1s' and peak_ratio is None):
+            raise ValueError('You must specify a peak_ratio if you are adding a doublet to the 1s orbital')
+        if (self.orbital == '1s' and prefix is None and name == ''):
+            raise ValueError('You must specify either the prefixes or the name if you are adding a doublet to the 1s orbital')
+        if (self.orbital =='1s' and prefix is None):
+            peak1_prefix = name + '0'
+            peak2_prefix = name + '1'            
+        elif (self.orbital != '1s' and prefix is None):
+            peak1_prefix = name + jprefix[self.orbital][0]
+            peak2_prefix = name + jprefix[self.orbital][1]
+        else:
+            if (type(prefix)!= list or len(prefix)!=2):
+                raise ValueError('Prefix must be a list with two elements for each doublet peakname')
+            peak1_prefix = prefix[0]
+            peak2_prefix = prefix[1]
         
         if self.pars is None:
             self.pars = lm.Parameters()      
@@ -210,13 +241,15 @@ class SpectraModel(lm.Model):
         
         self.pars.update(peak1.make_params())
         self.pars.update(peak2.make_params())
-        
+        # print(peak2_prefix+'amplitude')
         self.pars[peak1_prefix + 'amplitude'].set(np.max(self.ydata),min = 0,vary = 1)
         self.pars[peak1_prefix + 'center'].set(center, vary=1)
         self.pars[peak1_prefix + 'sigma'].set(sigma, vary=1)
         self.pars[peak1_prefix + 'fraction'].set(0.05, vary=1)
 
-        self.pars[peak2_prefix + 'amplitude'].set(expr = jratio[orbital]+'*' + peak1_prefix + 'amplitude')
+        if peak_ratio is None:
+            peak_ratio = jratio[self.orbital]
+        self.pars[peak2_prefix + 'amplitude'].set(expr = peak_ratio+'*' + peak1_prefix + 'amplitude')
         self.pars[peak2_prefix + 'center'].set(expr = peak1_prefix + 'center+' +str(SO_split))
         self.pars[peak2_prefix + 'sigma'].set(expr = peak1_prefix + 'sigma')
         self.pars[peak2_prefix + 'fraction'].set(expr = peak1_prefix + 'fraction')
@@ -237,8 +270,10 @@ class SpectraModel(lm.Model):
             self.element_ctrl.append(next_ctrl_peak)
             self.model_type.append('doublet')
         
-    def singlet(self,orbital,name='',pars = None,sigma = 0.6,center = None):
-        peak1_prefix = name + jprefix[orbital][0]
+    def singlet(self,name,pars = None,sigma = 0.6,center = None):
+        
+        peak1_prefix = name
+
         
         if self.pars is None:
             self.pars = lm.Parameters()      
