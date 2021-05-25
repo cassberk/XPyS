@@ -12,7 +12,6 @@ import lmfit as lm
 import sys
 import XPyS
 import XPyS.config as cfg
-import XPyS.models.models as xpsmodels
 from XPyS import bkgrds as backsub
 from XPyS.helper_functions import *
 from XPyS.gui_element_dicts import *

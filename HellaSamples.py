@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 import XPyS.spectra as sp
 import XPyS.config as cfg
-import XPyS.models.models as mds
+import XPyS.models as mds
 import XPyS.VAMAS
 import os
 

@@ -18,7 +18,7 @@ import lmfit as lm
 import sys
 import XPyS
 import XPyS.config as cfg
-import XPyS.models.models as xpsmodels
+import XPyS.models
 from XPyS import bkgrds as backsub
 from XPyS.helper_functions import *
 from XPyS.gui_element_dicts import *
@@ -99,7 +99,7 @@ class spectra:
 
     def load_model(self,model_name):
 
-        mod, pars, pairlist, el_ctrl = xpsmodels.load_model(model_name)
+        mod, pars, pairlist, el_ctrl = XPyS.models.load_model(model_name)
         
         self.mod = mod
         self.params = pars
