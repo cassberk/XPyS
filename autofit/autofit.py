@@ -1,6 +1,6 @@
 import numpy as np
 from copy import deepcopy as dc
-from xps_peakfit.helper_functions import *
+from XPyS.helper_functions import *
 from IPython import embed as shell
 
 
@@ -16,15 +16,15 @@ class autofit:
 
     def get_autofit_pars(self,orbital):
         if orbital == 'Nb3d':
-            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitNb.txt'
+            autofitpars_path = '/Users/cassberk/code/XPyS/autofit/autofitNb.txt'
         elif orbital =='Si2p':
-            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitSi2p.txt'
+            autofitpars_path = '/Users/cassberk/code/XPyS/autofit/autofitSi2p.txt'
         elif orbital =='C1s':
-            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitC1s.txt'
+            autofitpars_path = '/Users/cassberk/code/XPyS/autofit/autofitC1s.txt'
         elif orbital =='O1s':
-            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitO1s.txt'
+            autofitpars_path = '/Users/cassberk/code/XPyS/autofit/autofitO1s.txt'
         elif orbital =='F1s':
-            autofitpars_path = '/Users/cassberk/code/xps_peakfit/autofit/autofitF1s.txt'
+            autofitpars_path = '/Users/cassberk/code/XPyS/autofit/autofitF1s.txt'
         else:
             print('No autofit yet')
             return

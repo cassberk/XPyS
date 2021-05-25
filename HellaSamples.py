@@ -3,18 +3,18 @@ from IPython.display import display, clear_output
 
 import pandas as pd
 from copy import deepcopy as dc
-import XPyS as xps
-from xps.helper_functions import *
-from xps import bkgrds as backsub
-from xps.avantage_io import load_excel
+import XPyS
+from XPyS.helper_functions import *
+from XPyS import bkgrds as backsub
+from XPyS.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt
 
-import xps.spectra as sp
-import xps.config as cfg
-import xps.models.models as mds
-import xps.VAMAS
+import XPyS.spectra as sp
+import XPyS.config as cfg
+import XPyS.models.models as mds
+import XPyS.VAMAS
 import os
 
 class HellaSamples:
@@ -31,7 +31,7 @@ class HellaSamples:
         self.samples= {}
 
         for samplepath in pathlist:
-            samp = xps.io.load_sample(filepath = os.path.join(cfg.datarepo['stoqd'],samplepath),\
+            samp = XPyS.io.load_sample(filepath = os.path.join(cfg.datarepo['stoqd'],samplepath),\
                                         experiment_name = experiment_name)
             self.samples[samp.sample_name] = samp
             

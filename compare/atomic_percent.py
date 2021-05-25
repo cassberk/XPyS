@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from xps_peakfit.gui_element_dicts import *
+from XPyS.gui_element_dicts import *
 import matplotlib.patches as mpatches
-import xps_peakfit.config as cfg
+import XPyS.config as cfg
 
 
 def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = None, specify_names = None, \

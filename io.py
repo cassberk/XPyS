@@ -1,9 +1,9 @@
 import json
 import h5py
 import numpy as np
-import XPyS as xps
-import xps.sample
-import xps.spectra
+import XPyS
+import XPyS.sample
+import XPyS.spectra
 import json
 import lmfit as lm
 from pathlib import Path
@@ -287,7 +287,7 @@ def load_sample(filepath = None, experiment_name = None):
         print('You must choose an experiment, The options are: ',experiment_options)
         return
 
-    sample_obj = xps.sample.sample(overview=False)
+    sample_obj = XPyS.sample.sample(overview=False)
     sample_obj.load_path = filepath
     sample_obj.experiment_name = experiment_name
 
@@ -354,7 +354,7 @@ def load_sample(filepath = None, experiment_name = None):
 
 def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 = False):
 
-    spectra_obj = xps.spectra.spectra(spectra_name = spec)
+    spectra_obj = XPyS.spectra.spectra(spectra_name = spec)
     spectra_obj.load_path = filepath
     spectra_obj.experiment_name = experiment_name
 

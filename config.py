@@ -1,5 +1,5 @@
 import sys
-import XPyS as xps
+import XPyS
 sys.path.append("/Users/cassberk/code/XPyS/")
 import pandas as pd
 

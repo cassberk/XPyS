@@ -1,18 +1,18 @@
 # Try to load individual packages at some point
 import pandas as pd
 from copy import deepcopy as dc
-import XPyS as xps
-from xps.helper_functions import *
-from xps import bkgrds as backsub
-from xps.avantage_io import load_excel
+import XPyS
+from XPyS.helper_functions import *
+from XPyS import bkgrds as backsub
+from XPyS.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt
 
-import xps.spectra as sp
-from xps.compound import CompoundSpectra
-import xps.config as cfg
-import xps.VAMAS
+import XPyS.spectra as sp
+from XPyS.compound import CompoundSpectra
+import XPyS.config as cfg
+import XPyS.VAMAS
 import os
 from IPython import embed as shell
 
@@ -90,7 +90,7 @@ class sample:
             self.spectra_colors = spectra_colors
 
 
-        if type(dataload_obj) == xps.VAMAS.VAMASExperiment:
+        if type(dataload_obj) == XPyS.VAMAS.VAMASExperiment:
             self.load_experiment_sample_from_vamas(dataload_obj)
 
         elif (type(dataload_obj) == str) or (type(dataload_obj) == dict):
