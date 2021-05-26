@@ -34,8 +34,6 @@ class spectra:
 
     def __init__(self,orbital=None,model=None,bg_info = None, pairlist=None,element_ctrl=None,\
         spectra_name = None, BE_adjust = 0,load_spectra_object = False,load_model = False, autofit = False):
-            # def __init__(self, func, independent_vars=None, param_names=None,
-            #      nan_policy='raise', prefix='', name=None, **kws):
         """Class for holding spectra of a particular elemental scan
 
 
@@ -103,7 +101,7 @@ class spectra:
 
         Parameters
         ----------
-        model_load:str,SpectraModel Instance
+        model_load: str,SpectraModel Instance
             If this is a string you just need to specify the model name. The .hdf5 model will found in the saved_model folder.
             If this is a SpectraModel Instance it will load the model,pairlist,pars and element_ctrl from the SpectraModel instance
         """
@@ -126,7 +124,35 @@ class spectra:
     ### Analysis functions
         
     def bg_sub(self,subpars=None,idx = None,UT2_params = None):
+        """Method to perform background subtraction of the spectra
 
+
+        Parameters
+        ----------
+        subpars: list
+            Optional: ability to enter custom background subtraction parameters. If
+            None it will use the default in the sample dictionary
+                0. background subtraction limits
+                1. type of backgroudn subtraction
+                if 1. is UT2 then
+                2. the starting parameters for the UT2 filt
+                3. the indices to fit
+        
+        idx: int
+            Choose to perform background subtraction on a specific spectra held in self.I
+
+        UT2_params: lmfit parameters instance
+            Optional: can pass Tougaard2 parameters to do background subtraction. Will not fit.
+
+        Notes
+        -----
+        
+
+        Examples
+        --------
+
+
+        """     
         print(self.orbital)
         if not subpars == None:
             self.bg_info = subpars
@@ -281,7 +307,36 @@ class spectra:
             
             
     def plot_fitresults(self,specific_points = None, plot_with_background_sub = False,ref_lines = False,colors = None,infig = None, inaxs = None, offset = 0):
-            
+        """Function to plot the fit results
+
+
+        Parameters
+        ----------
+        specific_points: list
+            list of the fit_results to fit
+        plot_with_background_sub: bool
+            option to plot the fit results ontop of the background subtraction
+        ref_lines:bool
+            options to plot reference lines for the peaks
+        colors: dict
+            dictionary of the ctrl prefixes to specify peak colors
+        infig: matplotlib fig instance
+            option to pass in a matplotlib fig instance to plot on top of
+        inax: matplotlib fig instance
+            option to pass in a matplotlib ax instance to plot on top of
+        offset: int, float
+            y-offset of spectra
+
+
+        Notes
+        -----
+        
+
+        Examples
+        --------
+
+
+        """         
 
         if colors is None:
             hue = element_color
@@ -423,7 +478,30 @@ class spectra:
 
 
     def plot(self,spec_type = 'raw',specific_points = None, plot_with_background_sub = False, offset = 0):
+        """Function to plot the spectra
+
+
+        Parameters
+        ----------
+        spec_type: str
+            'raw' or 'sub': if raw will plot the experimental spectra. If sub will plot the background subtracted spectra
+        specific_points: list
+            list of the spectra to plot
+        plot_with_background_sub: bool
+            option to plot the spectra on top of the background subtraction
+        offset: int,float
+            y-offset of spectra
+
+        Notes
+        -----
         
+
+        Examples
+        --------
+
+
+        """      
+
         hue = cfg.spectra_colors()[self.orbital]
 
         if specific_points == None:
