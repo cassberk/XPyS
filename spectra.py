@@ -275,11 +275,11 @@ class spectra:
                 for par in self.autofit.guess_pars.keys():
                     self.params[par].value = self.autofit.guess_pars[par]
                     # self.par_guess_track[par].append(self.autofit.guess_pars[par])
-            # self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
+            self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
             # Try using minimuzer class to make the funtion more flexible
-            fitter = lm.Minimizer(self.fcn2min,self.params,fcn_args = (self.esub, self.isub[i]))
-            self.fit_results[i] = fitter.minimize(method=fit_method)
+            # fitter = lm.Minimizer(self.fcn2min,self.params,fcn_args = (self.esub, self.isub[i]))
+            # self.fit_results[i] = fitter.minimize(method=fit_method)
 
             if update_with_prev_pars ==True:
                 self.params = self.fit_results[i].params.copy()
