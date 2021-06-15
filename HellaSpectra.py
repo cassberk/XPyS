@@ -39,7 +39,7 @@ import decimal
 
 from IPython import embed as shell
 
-class SonnySpectra:
+class HellaSpectra:
 
     def __init__(self,spectra=None):
         self.info = []
@@ -128,7 +128,7 @@ class SonnySpectra:
         return emin,emax
 
     def _check_bounds(self,min_bnd,max_bnd,spectra_type = 'raw'):
-        """check to make sure the boudns are not outside the binding energies of any of the spectra"""
+        """check to make sure the bounds are not outside the binding energies of any of the spectra"""
         # print('4')
         if spectra_type =='raw':
             dset = 'E'
@@ -184,6 +184,8 @@ class SonnySpectra:
                 if type(target) == dict:
                     dftemp[self.targetname] = [target[sample[0]]]*len(sample[1].fit_results)
                     print(sample[0],len(sample[1].fit_results))
+            elif target is None:
+                dftemp[self.targetname] = [0]*len(sample[1].fit_results)
 
             try:
                 param_df = param_df.append(dftemp)
@@ -240,17 +242,12 @@ class SonnySpectra:
         amp = np.empty(len(spectra_matrix))
 
         for i in range(len(spectra_matrix)):
-            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],negative = None,peakpos = peak_pos)
+            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],peakpos = peak_pos)
 
         self.peaktrack = cen-peak_pos
         if plotflag:
             plt.plot(self.peaktrack,'o-')
 
-
-    # def pad_or_truncate(self,some_list, desired_len):
-    #     return [0]*(desired_len - len(some_list)) + list(some_list)
-    def pad_or_truncate(self,some_list, target_len):
-        return some_list[:target_len] + [0]*(target_len - len(some_list))
 
     def align_peaks(self,peak_pos,energy=None,spec_set = None,plotflag = True):
 
@@ -267,17 +264,20 @@ class SonnySpectra:
 
         for i in range(len(spectra_matrix)):
 
-            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],negative = None,peakpos = peak_pos)
+            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],peakpos = peak_pos)
 
             mv_ev = np.round(cen[i] - peak_pos,2)
 
-            mv_pts = np.int(np.round((cen[i] - peak_pos)*(len(energy)/(energy[0] - energy[-1]))))
+            mv_pts = np.int(mv_ev*(len(energy)/(energy[-1] - energy[0])))
 
             if mv_pts ==0:
                 mv_spec[i] = spectra_matrix[i]
 
-            else:
-                mv_spec[i] = self.pad_or_truncate(spectra_matrix[i][:-1*mv_pts],len(energy))
+            elif mv_pts > 0:
+                mv_spec[i] = np.asarray(list(spectra_matrix[i][mv_pts:]) + [0]*mv_pts)
+            
+            elif mv_pts < 0:
+                mv_spec[i] = np.asarray([0]*np.abs(mv_pts)+list(spectra_matrix[i][:mv_pts]))
 
         if plotflag:
             for i in range(len(spectra_matrix)):
@@ -337,6 +337,7 @@ class SonnySpectra:
                 mark = '.'
             else:
                 mark = 'x'
+            # mark = 'bo'
             ax1.plot(self.df[self.df['sample']==s][x].values,self.df[self.df['sample']==s][y].values,mark,markersize = 10)
             
             if self.df[self.df['sample']==s][self.targetname].drop_duplicates().values[0] == 0:
