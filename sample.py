@@ -417,8 +417,8 @@ class sample:
 
         ax.set_xticks(x)
         ax.set_ylim(ymin = 0)
-        # if 'pos names' in self.data['C1s']:
-        #     ax.set_xticklabels(self.data['C1s']['pos names'],rotation = 80);
+        if hasattr(self.__dict__['C1s'],'positions'):
+            ax.set_xticklabels(self.__dict__['C1s'].positions,rotation = 80)
         ax.legend(list(self.atomic_percent.keys()),bbox_to_anchor=(0.85, 0.4, 0.5, 0.5), loc='lower center',fontsize = 20)
 
         return fig, ax
