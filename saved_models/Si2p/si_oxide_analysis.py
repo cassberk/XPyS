@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy as dc
-from xps_peakfit.gui_element_dicts import *
+from XPyS.gui_element_dicts import *
 
 def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiOx4_32_'],substrate='Si_32_',\
     S_oxide=1,S_substrate=1,EAL=2.84,specific_points = None,SFactors = None, plotflag = True):

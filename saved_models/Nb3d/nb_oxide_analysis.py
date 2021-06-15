@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy as dc
 import lmfit as lm
-from xps_peakfit.gui_element_dicts import *
+from XPyS.gui_element_dicts import *
 
 """
 Series of funcitons for analyzing thicknesses of the different oxides for NbOxides
