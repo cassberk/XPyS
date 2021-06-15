@@ -287,6 +287,12 @@ def load_sample(filepath = None, experiment_name = None):
         print('You must choose an experiment, The options are: ',experiment_options)
         return
 
+
+    with h5py.File(filepath,'r') as f:
+        experiment_options = [exp for exp in f.keys()]
+        if experiment_name not in experiment_options:
+            raise FileNotFoundError('There is no experiment of that name')
+
     sample_obj = XPyS.sample.sample(overview=False)
     sample_obj.load_path = filepath
     sample_obj.experiment_name = experiment_name
