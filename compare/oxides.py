@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from xps_peakfit.gui_element_dicts import *
+from XPyS.gui_element_dicts import *
 # from embed import shell()
 
 def plot_oxides(sample_spectra,set_idx = None, error = 'std', specify_names = None, width = 0.8,capsize = 20):
