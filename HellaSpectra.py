@@ -52,9 +52,12 @@ class HellaSpectra:
             if not any([exclude in file for exclude in exclude_list]):
                 fpath = os.path.join(cfg.datarepo['stoqd'],file)
                 with h5py.File(fpath,'r') as f:
-                    exps = [k for k in f.keys()]
+                    if experiment_name is None:
+                        expload = [k for k in f.keys()][0]
+                    else:
+                        expload = experiment_name
                     # print(file.split('/')[-1],exps[0])
-                    datadict[file.split('/')[-1].split('.')[0]] = XPyS.io.load_spectra(filepath = fpath,experiment_name = exps[0],spec = spectra_name)
+                    datadict[file.split('/')[-1].split('.')[0]] = XPyS.io.load_spectra(filepath = fpath,experiment_name = expload,spec = spectra_name)
                     # f.close()
 
         self.spectra_objects = datadict
