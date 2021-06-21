@@ -2,9 +2,10 @@
 import pandas as pd
 from copy import deepcopy as dc
 import XPyS
-from XPyS.helper_functions import *
-from XPyS import bkgrds as backsub
-from XPyS.avantage_io import load_excel
+from .helper_functions import index_of, guess_from_data
+
+# from .bkgrds import backsub
+# from XPyS.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt

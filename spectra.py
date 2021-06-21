@@ -19,8 +19,9 @@ import sys
 import XPyS
 import XPyS.config as cfg
 import XPyS.models
-from XPyS import bkgrds as backsub
-from XPyS.helper_functions import *
+import XPyS.bkgrds as backsub
+from .helper_functions import index_of, guess_from_data
+
 from XPyS.gui_element_dicts import *
 
 import XPyS.VAMAS

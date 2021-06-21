@@ -4,7 +4,8 @@ from IPython.display import display, clear_output
 import pandas as pd
 from copy import deepcopy as dc
 import XPyS
-from XPyS.helper_functions import *
+from .helper_functions import index_of, guess_from_data
+
 from XPyS import bkgrds as backsub
 from XPyS.avantage_io import load_excel
 import lmfit as lm

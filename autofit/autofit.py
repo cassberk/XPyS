@@ -1,6 +1,6 @@
 import numpy as np
 from copy import deepcopy as dc
-from XPyS.helper_functions import *
+from XPyS.helper_functions import index_of, guess_from_data
 from IPython import embed as shell
 
 

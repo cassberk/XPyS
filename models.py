@@ -5,7 +5,8 @@ import os
 import numpy as np
 import XPyS
 import XPyS.config as cfg
-from XPyS.helper_functions import *
+from .helper_functions import index_of, guess_from_data
+
 from lmfit.models import GaussianModel, LorentzianModel, PseudoVoigtModel, SkewedVoigtModel
 
 def find_files(filename, search_path):

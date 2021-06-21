@@ -13,7 +13,8 @@ import sys
 import XPyS
 import XPyS.config as cfg
 from XPyS import bkgrds as backsub
-from XPyS.helper_functions import *
+from .helper_functions import index_of, guess_from_data
+
 from XPyS.gui_element_dicts import *
 
 import XPyS.VAMAS
