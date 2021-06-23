@@ -27,7 +27,7 @@ from .helper_functions import index_of, guess_from_data
 from XPyS.gui_element_dicts import *
 import XPyS.config as cfg
 import XPyS.VAMAS
-import XPyS.autofit.autofit
+import XPyS.autofit
 import os
 import glob
 import h5py
@@ -35,6 +35,7 @@ import h5py
 from sklearn.decomposition import PCA
 from scipy.stats import pearsonr
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 
 import matplotlib.patches as mpatches
 import decimal
@@ -66,7 +67,10 @@ class HellaSpectra:
 
     def bgsuball(self,subpars):
         for sample in self.spectra_objects.items():
-            sample[1].bg_sub(subpars=subpars)
+            try:
+                sample[1].bg_sub(subpars=subpars)
+            except:
+                print('Could Not bg_sub ',sample[0])
 
     def interp_spectra(self,emin=None,emax=None,spectra_type = 'raw',step = 0.1):
         """Interpolate the spectra to all have the same binding energies"""
@@ -100,18 +104,23 @@ class HellaSpectra:
         # if d < 0:
         #     xnew = np.round(xnew,-1*d)
         # print(np.min(xnew),np.max(xnew))
-        first = True
-        for name,obj in self.spectra_objects.items():
-            print(name)
-            for i in range(len(obj.__dict__[dset[1]])):
-                f = interp1d(obj.__dict__[dset[0]], obj.__dict__[dset[1]][i],kind = 'cubic')
-                if not first:
-                    ynew = np.vstack((ynew,f(xnew)))
-                else:
-                # except NameError:
-                #     print('and here')
-                    ynew = f(xnew)
-                    first = False
+
+        try:
+            first = True
+            for name,obj in self.spectra_objects.items():
+                print(name)
+                for i in range(len(obj.__dict__[dset[1]])):
+                    f = interp1d(obj.__dict__[dset[0]], obj.__dict__[dset[1]][i],kind = 'cubic')
+                    if not first:
+                        ynew = np.vstack((ynew,f(xnew)))
+                    else:
+                    # except NameError:
+                    #     print('and here')
+                        ynew = f(xnew)
+                        first = False
+        except:
+            print('Couldnt Interpolate',name)
+            return
         # print(ynew)
         return xnew,ynew
 
@@ -295,6 +304,82 @@ class HellaSpectra:
 
         self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
         self.update_info('adjusted to '+str(peak_pos))
+
+
+    def gaussian(x, mean, amplitude, standard_deviation):
+        return amplitude * np.exp( - (x - mean)**2 / (2*standard_deviation ** 2))
+
+    def par_histogram(self,pars):
+        """
+        Create a histogram of the desired input parameters
+        """
+
+        def gaussian(x, mean, amplitude, standard_deviation):
+            return amplitude * np.exp( - (x - mean)**2 / (2*standard_deviation ** 2))
+
+        fig,ax = plt.subplots(figsize = (12,8))
+
+
+        color = ['grey','red','blue','green']
+        center_stats = {}
+        for par in enumerate(pars):
+            bin_heights, bin_borders, _ = ax.hist(self.df_params[par[1]].values, bins='auto', label='histogram',color=color[par[0]])
+            
+            try:
+                bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+                center_stats[par[1]], _ = curve_fit(gaussian, bin_centers, bin_heights, p0=[self.df_params[par[1]].values.mean(), 40, 0.5])
+
+                x_interval_for_fit = np.linspace(bin_borders[0]-1, bin_borders[-1]+1, 10000)
+                ax.plot(x_interval_for_fit, gaussian(x_interval_for_fit, *center_stats[par[1]]), label='fit',color=color[par[0]])
+            except:
+                print('Gaussian not good for ',par)
+            
+        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                    ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(24)
+            
+        ax.legend(pars,fontsize = '16')
+
+        # red_patch = mpatches.Patch(color='red', label=self.targetname)
+        # blue_patch = mpatches.Patch(color='blue', label='No '+self.targetname)
+
+        # ax.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
+    ## Using dictionary
+
+    def make_spectra(self,params,mod,pairlist,number):
+        spec_train = []
+        par_train = []
+
+        par_train_row = []
+        pars = [pars for pars in [par for component_pars in [model_component._param_names for model_component in mod.components] \
+            for par in component_pars if any([p[0] in par for p in pairlist])] if not 'skew' in pars and not 'fraction' in pars] 
+        
+        randpar = {par:[] for par in pars}
+        for i in tqdm(range(number)):
+            for par in pars:
+
+                if ('amplitude' in par) or ('sigma' in par):
+                    _randpar = np.min(self.df_params[par].values) + (np.max(self.df_params[par].values)-np.min(self.df_params[par].values))*np.random.rand()
+                    randpar[par].append(_randpar)
+                    params[par].set(_randpar)
+
+                if 'center' in par:
+    #                 if par == 'Nb_52_center':
+    #                     variation = 0.005
+    #                 else:
+    #                     variation = 0.01
+    #                 _randpar = center_stats[par][0] + 0.1*randn()
+                    # _randpar = center_stats[par][0] + center_stats[par][2]*randn()
+                    _randpar = np.min(self.df_params[par].values) + (np.max(self.df_params[par].values)-np.min(self.df_params[par].values))*np.random.rand()
+                    randpar[par].append(_randpar)
+                    params[par].set(_randpar)
+                
+
+            spec_train.append(mod.eval(params = params,x= self.energy))
+
+        spec_train = np.asarray(spec_train)
+    
+        return spec_train, randpar
 
     def pca(self,n_comps = 3):
         pca = PCA(n_components=n_comps)
