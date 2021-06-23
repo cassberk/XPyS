@@ -25,7 +25,7 @@ from .helper_functions import index_of, guess_from_data
 from XPyS.gui_element_dicts import *
 
 import XPyS.VAMAS
-import XPyS.autofit.autofit
+import XPyS.autofit
 import os
 import glob
 from IPython import embed as shell
@@ -272,7 +272,7 @@ class spectra:
 
             if autofit:
                 if not hasattr(self,'autofit'):
-                    self.autofit = XPyS.autofit.autofit.autofit(self.esub,self.isub[i],self.orbital)
+                    self.autofit = XPyS.autofit.autofit(self.esub,self.isub[i],self.orbital)
                 for par in self.autofit.guess_pars.keys():
                     self.params[par].value = self.autofit.guess_pars[par]
                     # self.par_guess_track[par].append(self.autofit.guess_pars[par])
