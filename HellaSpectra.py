@@ -43,12 +43,53 @@ import decimal
 from IPython import embed as shell
 
 class HellaSpectra:
-
+    """
+    Class for holding lots of spectra objects as well as their spectra in matrix and dataframe format. Used
+    for statistical analysis and data exploration.
+    """
     def __init__(self,spectra=None):
         self.info = []
+    """
+        
+        Parameters
+        ----------
 
+
+        Notes
+        -----
+
+
+        Examples
+        --------
+
+
+        """
     def load_spectra_objs(self,data_paths,spectra_name,experiment_name = None, exclude_list = []):
+        """
+        Load the sample objects into a dictionary
 
+        Parameters
+        ----------
+        data_paths: list
+            list of datapaths to the sample objects to load
+
+        spectra_name: str
+            string of the spectra orbital
+
+        experiment_name: str
+            name of the experiment in the .hdf5 sample file
+        
+        exclude_list: list
+            list of sample names to exclude from loading
+
+        Notes
+        -----
+
+
+        Examples
+        --------
+
+        """
         datadict = {}
         for file in data_paths:
             print(any([exclude in file for exclude in exclude_list]))
@@ -66,6 +107,15 @@ class HellaSpectra:
         self.spectra_objects = datadict
 
     def bgsuball(self,subpars):
+        """
+        Calls bg_sub on all the spectra objects held in self.spectra_objects
+
+        Parameters
+        ----------
+        subpars: list
+            list of the background subtraction parameters. See spectra.bg_sub
+
+        """
         for sample in self.spectra_objects.items():
             try:
                 sample[1].bg_sub(subpars=subpars)
@@ -73,7 +123,22 @@ class HellaSpectra:
                 print('Could Not bg_sub ',sample[0])
 
     def interp_spectra(self,emin=None,emax=None,spectra_type = 'raw',step = 0.1):
-        """Interpolate the spectra to all have the same binding energies"""
+        """Interpolate the spectra to all have the same binding energies
+
+        Parameters
+        ----------
+        emin: int,float
+            minimum binding energy value
+
+        emax: int,float
+            maximum binding energy value
+
+        spectra_type: str
+            Option to interpolate the raw data or backgroudn subtracted data. ('raw' or 'sub')
+
+        step: int, float
+            step between binding energies 
+        """
         # print('2')
         ynew = None
         if spectra_type == 'raw':
@@ -157,6 +222,26 @@ class HellaSpectra:
             raise ValueError('The specified bounds are outside the maximum values for', check_max )
 
     def build_spectra_matrix(self,emin=None,emax=None,spectra_type = 'raw',subpars = None,step = 0.1):
+        """
+        Build a 2d array of all of the spectra from the spectra objects
+
+        Parameters
+        ----------
+        emin: int,float
+            minimum binding energy value
+
+        emax: int,float
+            maximum binding energy value
+
+        spectra_type: str
+            Option to interpolate the raw data or backgroudn subtracted data. ('raw' or 'sub')
+
+        subpars: list
+            list of the background subtraction parameters. See spectra.bg_sub
+
+        step: int, float
+            step between binding energies        
+        """
         # print('1')
         if spectra_type == 'sub':
             if subpars == None:
@@ -175,6 +260,23 @@ class HellaSpectra:
         self._spectra = spectra
 
     def build_dataframe(self,spectra_dict=None,target = None,targetname = 'target',include_fit_params = True):
+        """
+        Build a dataframe out of the spectra array as well as the parameters from the spectra objects fit_results
+
+        Parameters
+        ----------
+        spectra_dict: dict
+            option to input dictionary of spectra objects. If not specified it will just use the self.spectra_objects dict
+
+        target: dict
+            dictionary of classifiers for different samples. Key is the sample name and value is the integer classifier.
+
+        targetname: str
+            Name of the classifier.
+
+        include_fit_params: bool
+            Option to include the fit_result parameters into the dataframe. Default is True   
+        """
         
         self.targetname = targetname
         if spectra_dict is None:
@@ -216,27 +318,41 @@ class HellaSpectra:
         self._df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
 
     def reset(self):
+        """Reset spectra array and dataframe to initial loaded states"""
         self.spectra = dc(self._spectra)
         self.df = dc(self._df)
         self.info = []
 
     def normalize(self):
+        """Normalize all of the spectra"""
         _yN = np.empty(self.spectra.shape)
 
         for i in range(len(_yN)):
             _yN[i,:] = self.spectra[i,:]/np.trapz(self.spectra[i,:])
 
         self.spectra = _yN
-        self.update_info('Normalized')
+        self._update_info('Normalized')
 
     def plot_spec(self,offset = 0,avg = False):
+        """
+        Plot all the spectra
+
+        Parameters
+        ----------
+        offset: int, float
+            offset each spectra by set amount or stacked display
+        
+        avg: bool
+            Option to plot mean spectra. Default False
+        """
         if not avg:
             for i in range(len(self.spectra)):
                 plt.plot(self.energy,self.spectra[i,:]+i*offset)
         if avg:
             plt.plot(self.energy,self.spectra.mean(axis=0))
 
-    def update_info(self,message):
+    def _update_info(self,message):
+        """Update order of operations on the spectra array to keep track processing history"""
         if self.info != []:
             if self.info[-1] == message:
                 return
@@ -247,6 +363,16 @@ class HellaSpectra:
 
 
     def peak_tracker(self,peak_pos,energy= None,spectra_matrix=None,plotflag = True):
+        """
+        Get the peak positions for all the spectra using guess_from_data() in helper_functions module.
+        Then plot the differences in the peak positions from the peak_pos parameter
+
+        Parameters
+        ----------
+        peak_pos: int, float
+            Guess position of the peak. guess_from_data() will search in vicinity for the maximum
+        
+        """
         if energy ==None:
             energy = self.energy
         if spectra_matrix == None:
@@ -263,8 +389,16 @@ class HellaSpectra:
             plt.plot(self.peaktrack,'o-')
 
 
-    def align_peaks(self,peak_pos,energy=None,spec_set = None,plotflag = True):
+    def align_peaks(self,peak_pos,energy=None,plotflag = True):
+        """
+        Align all the peaks.  Will search for maximum of peak aroudn peak_pos and then adjust spectra to peak_pos
 
+        Parameters
+        ----------
+        peak_pos: int, float
+            Guess position of the peak. guess_from_data() will search in vicinity for the maximum
+        
+        """
         fig = plt.figure()
         if energy == None:
             energy = self.energy
@@ -303,15 +437,17 @@ class HellaSpectra:
         self.spectra = mv_spec
 
         self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
-        self.update_info('adjusted to '+str(peak_pos))
+        self._update_info('adjusted to '+str(peak_pos))
 
-
-    def gaussian(x, mean, amplitude, standard_deviation):
-        return amplitude * np.exp( - (x - mean)**2 / (2*standard_deviation ** 2))
 
     def par_histogram(self,pars):
         """
         Create a histogram of the desired input parameters
+
+        Parameters
+        ----------
+        pars: list
+            list of strings of the parameters to get histograms of distribution
         """
 
         def gaussian(x, mean, amplitude, standard_deviation):
@@ -340,6 +476,8 @@ class HellaSpectra:
             
         ax.legend(pars,fontsize = '16')
 
+        return fig, ax
+
         # red_patch = mpatches.Patch(color='red', label=self.targetname)
         # blue_patch = mpatches.Patch(color='blue', label='No '+self.targetname)
 
@@ -347,6 +485,26 @@ class HellaSpectra:
     ## Using dictionary
 
     def make_spectra(self,params,mod,pairlist,number):
+        # TODO:
+        # Incorporate SpectraModel into this so pairlist and params dont need to specified separately
+        """
+        Make a bunch of simulated spectra using the parameters in the dataframe as bounds. Useful for training
+        Machine Learning Models
+
+        Parameters
+        ----------
+        params: lmfit Parameters object
+            Parameters object to be used to evaluate the model function
+
+        mod: lmfit Model object
+            Model object to be used to evaluate the parameters
+
+        pairlist: list of tuples
+            pairlist of prefixes in model object
+
+        number: int
+            number of spectra togreate
+        """
         spec_train = []
         par_train = []
 
@@ -382,9 +540,18 @@ class HellaSpectra:
         return spec_train, randpar
 
     def pca(self,n_comps = 3):
+        """
+        Perform Principal Component Analysis on the spectra and plot the principal components
+
+        Parameters
+        ----------
+        n_comps: int
+            number of principal components to evaluate
+        """
+
         pca = PCA(n_components=n_comps)
 
-        """PCA of raw signal"""
+        # PCA of raw signal
         X_r = pca.fit(self.spectra)
         X_tr = pca.fit_transform(self.spectra)
 
@@ -412,7 +579,20 @@ class HellaSpectra:
                     ax.get_xticklabels() + ax.get_yticklabels()):
             item.set_fontsize(18)
 
+
     def plotpca2D(self,x,y):
+        """
+        Plot 2d scatter plot of principal components
+
+        Parameters
+        ----------
+        x: str 'P1','P2',...etc
+            principal component to plot on x-axis
+
+        y: str 'P1','P2',...etc
+            principal component to plot on y-axis
+
+        """
         fig,(ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
 
         number_of_plots=len(self.spectra_objects.keys())
@@ -454,7 +634,23 @@ class HellaSpectra:
         ax2.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
         fig.tight_layout()
 
+
     def plotpca3D(self,X='P1', Y='P2', Z='P3', label = 'samples'):
+        """
+        Plot 3d scatter plot of principal components
+
+        Parameters
+        ----------
+        x: str 'P1','P2',...etc
+            principal component to plot on x-axis, Default 'P1'
+
+        y: str 'P1','P2',...etc
+            principal component to plot on y-axis, Default 'P2'
+
+        z: str 'P1','P2',...etc
+            principal component to plot on z-axis, Default 'P3'
+        """
+
         fig = plt.figure(figsize = (20,8))
         ax = fig.add_subplot(1, 2, 1, projection='3d')
         
@@ -491,16 +687,20 @@ class HellaSpectra:
         ax.set_xlabel(X,fontsize = 16)
         ax.set_ylabel(Y,fontsize = 16)
         ax.set_zlabel(Z,fontsize = 16)
-        # for ax in [ax1,ax2,ax3,ax4,ax5,ax6]:
-        #     ax.set_xlabel('P2')
-        #     if (ax ==ax1) or (ax ==ax4):
-        #         ax.set_ylabel('P3')
-        #     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
-        #                 ax.get_xticklabels() + ax.get_yticklabels()):
-        #         item.set_fontsize(16)
+
 
     def correlate(self,par,plotflag = True):
-        
+        """
+        Find and plot correlation of a parameter against the Binding Energies for all the spectra
+
+        Parameters
+        ----------
+        par: str 
+            Parameter to correlate against Binding Energies
+
+        plotflag: bool
+            Option to plot. Default = True
+        """
         print(' '.join(self.info))
         pmax = self.df.corr()[par].iloc[0:self.spectra.shape[1]].max()
         emax = self.df.corr()[par].iloc[0:self.spectra.shape[1]].idxmax()
@@ -522,6 +722,17 @@ class HellaSpectra:
         return pmax,emax,fig,axs
 
     def par_corr(self,Xs,Ys):
+        """
+        Plots the correllation scatter plots and finds the pearson p-number between the given parameters.
+
+        Parameters
+        ----------
+        Xs: list 
+            list of parameter names on x-axes
+
+        Ys: list 
+            list of parameter names on y-axes
+        """
         fig, axs = plt.subplots(len(Ys),len(Xs),figsize = (4*len(Xs),4*len(Ys)))
         ylabels = []
         corrmat = np.empty([len(Ys),len(Xs)])
@@ -549,10 +760,6 @@ class HellaSpectra:
                 except:
                     pass
 
-        # for ax in axs:
-        #     for item in ([ax.yaxis.label]):
-        #         item.set_fontsize(26)
-
         colmax = np.argmax(corrmat,axis=0)
         for i in enumerate(colmax):
             axs[i[1]][i[0]].set_title('Pearsons correlation: %.3f' % corrmat[i[1]][i[0]],color = 'darkred',fontsize = 18)
@@ -562,6 +769,17 @@ class HellaSpectra:
         return fig, axs
 
     def find_linautofit(self,Xs,Ys,plotflag = True):
+        """
+        Linear regression of specified entries in self.df
+
+        Parameters
+        ----------
+        Xs: list 
+            list of x-axes df entries
+
+        Ys: list 
+            list of y-axes df entries
+        """
         # We can rewrite the line equation as y = Ap, where A = [[x 1]] and p = [[m], [b]]
         autofitparlist = []
         fig, axs = plt.subplots(1,len(Xs),figsize = (4*len(Xs),4))
