@@ -130,6 +130,60 @@ def model_to_hdf5(model_name,mod,pars,pairlist,element_ctrl):
         except:
             print(model_name,'couldnt save element_ctrl')
 
+def _spectramodel_to_hdf5(spectra_model,path):
+
+
+    mod = spectra_model.model
+    pars = spectra_model.pars
+    pairlist = spectra_model.pairlist
+    element_ctrl = spectra_model.element_ctrl
+    orbital = spectra_model.orbital
+
+
+    if path.split('.')[-1] =='hdf5':
+        path = path.split('.')[0]
+        
+    with h5py.File(path+'.hdf5','w') as f:
+
+        mod_attr = ('params','mod')
+        dt = h5py.special_dtype(vlen=str) 
+
+        # params
+        try:
+            dt = h5py.special_dtype(vlen=str)
+            data_temp = np.asarray([pars.dumps()], dtype=dt)
+            f.create_dataset('params', data=data_temp)
+        except:
+            print(path,'couldnt save params')
+
+        # model
+        try:
+            data_temp = np.asarray([mod.dumps()], dtype=dt) 
+            f.create_dataset('mod', data=data_temp)
+        except:
+            print(path,'couldnt save model')
+
+        # pairlist
+        try:
+#             dt = h5py.special_dtype(vlen=str)
+#             plist = np.asarray([pair for pair in pairlist], dtype=dt) 
+            f.attrs['pairlist'] = pairlist
+        except:
+            print(path,'couldnt save pairlist')
+
+
+        # element_ctrl
+        try:
+            f.attrs['element_ctrl'] = element_ctrl
+        except:
+            print(path,'couldnt save element_ctrl')
+
+        # orbital
+        try:
+            f.attrs['orbital'] = orbital
+        except:
+            print(path,'couldnt save orbital')
+
 def save_spectra_model(spectra_model,element = None,name = None,filepath = None):
     """Save a SpectraModel object to .hdf5
     Parameters
@@ -176,16 +230,74 @@ def save_spectra_model(spectra_model,element = None,name = None,filepath = None)
     else:
         fpath = filepath
     
-    model_to_hdf5(fpath,model,pars,pairlist,spectra_model.element_ctrl)
+    # model_to_hdf5(fpath,model,pars,pairlist,spectra_model.element_ctrl)
+    _spectramodel_to_hdf5(spectra_model,fpath)
     print('Saved model to: ',fpath)
 
 
-class SpectraModel(lm.Model):
+def load_spectra_model(model):
+    model_filename = model+'.hdf5'
+    model_filepath = find_files(model_filename,os.path.join(cfg.package_location,'XPyS/saved_models'))
+
+    if len(model_filepath) > 1:
+        print('there are more than one files with that name',model_filepath)
+        return
+    print('Model loaded from:',model_filepath[0])
+
+        # f = h5py.File(model_filepath[0],'r')
+    with h5py.File(model_filepath[0],'r') as f:
+        
+        # model
+        try:
+            m = lm.model.Model(lambda x: x)
+            mod = m.loads(f['mod'][...][0])
+        except:
+            print(model,'couldnt save model')
+
+        # params
+        p = lm.parameter.Parameters()
+        try:
+            pars = p.loads(f['params'][...][0])
+        except:
+            print(model,'couldnt load params')
+
+        # pairlist
+        try:
+            plist = [tuple(f.attrs['pairlist'][i]) for i in range(len(f.attrs['pairlist']))]
+            pairlist = []
+            for pair in plist:
+                if pair[1] == '':
+                    pairlist.append(tuple([pair[0]]))
+                else:
+                    pairlist.append(pair)
+
+        except:
+            print(model,'couldnt load pairlist')
+
+
+        # model_ctrl
+        try:
+            element_ctrl = list(f.attrs['element_ctrl'])
+        except:
+            print(model,'couldnt load element_ctrl')
+
+        # model_ctrl
+        try:
+            orbital = f.attrs['orbital']
+        except:
+            print(model,'couldnt load orbital')           
+
+    spectra_model = SpectraModel(orbital = orbital,pars = pars, pairlist = pairlist, element_ctrl = element_ctrl,model = mod,load = True)       
+    return spectra_model
+
+
+class SpectraModel:
 
     jprefix = {'1s':['_','_'],'2p':['_32_','_12_'],'3d':['_52_','_32_']}
     jratio = {'1s':['',''],'2p':'(1/2)','3d':'(2/3)'}
 
-    def __init__(self,orbital = None,name='',pars = None,SO_split=None, xdata = None, ydata = None,sigma = 0.6, n_comps = 1):
+    def __init__(self,orbital = None,name='',pars = None,SO_split=None, xdata = None, ydata = None,sigma = 0.6, n_comps = 1,model_type = [],load = False,model = None,\
+        pairlist = None, element_ctrl = None):
         """Build a Model to fit the spectra
 
         Parameters
@@ -232,7 +344,17 @@ class SpectraModel(lm.Model):
         self.orbital = orbital
         self.xdata = xdata
         self.ydata = ydata
-        self.model_type = []
+        self.model_type = model_type
+        self.pairlist = pairlist
+        self.element_ctrl = element_ctrl
+
+        if model:
+            self.model = model
+
+        if not load:
+            self.dynamic_build(name,sigma,n_comps,SO_split)
+
+    def dynamic_build(self,name,sigma,n_comps,SO_split):
 
         if (type(name) is list and len(name) != n_comps):
             raise ValueError('The number of prefixes in name does not match the number of components in n_comp')
@@ -246,9 +368,9 @@ class SpectraModel(lm.Model):
             for i in range(n_comps):
                 self.singlet(name = name[i],pars = self.pars)
         elif self.orbital in ['2p','3d','4f']:
-            if xdata is None:
+            if self.xdata is None:
                 raise ValueError('Need xdata')
-            if ydata is None:
+            if self.ydata is None:
                 raise ValueError('Need ydata')
             for i in range(n_comps):
                 self.doublet(name=name[i],pars = self.pars,SO_split=SO_split)
@@ -266,8 +388,8 @@ class SpectraModel(lm.Model):
             peak1_prefix = name + '0'
             peak2_prefix = name + '1'            
         elif (self.orbital != '1s' and prefix is None):
-            peak1_prefix = name + jprefix[self.orbital][0]
-            peak2_prefix = name + jprefix[self.orbital][1]
+            peak1_prefix = name + self.jprefix[self.orbital][0]
+            peak2_prefix = name + self.jprefix[self.orbital][1]
         else:
             if (type(prefix)!= list or len(prefix)!=2):
                 raise ValueError('Prefix must be a list with two elements for each doublet peakname')
@@ -296,7 +418,7 @@ class SpectraModel(lm.Model):
         self.pars[peak1_prefix + 'fraction'].set(0.05, vary=1)
 
         if peak_ratio is None:
-            peak_ratio = jratio[self.orbital]
+            peak_ratio = self.jratio[self.orbital]
         self.pars[peak2_prefix + 'amplitude'].set(expr = peak_ratio+'*' + peak1_prefix + 'amplitude')
         self.pars[peak2_prefix + 'center'].set(expr = peak1_prefix + 'center+' +str(SO_split))
         self.pars[peak2_prefix + 'sigma'].set(expr = peak1_prefix + 'sigma')

@@ -28,6 +28,7 @@ import XPyS.VAMAS
 import XPyS.autofit
 import os
 import glob
+import importlib
 from IPython import embed as shell
 
 
@@ -108,7 +109,11 @@ class spectra:
         """
 
         if type(model_load) is str:
-            mod, pars, pairlist, el_ctrl = XPyS.models.load_model(model_load)
+            spec_model = XPyS.models.load_spectra_model(model_load)
+            mod = spec_model.model
+            pars = spec_model.pars
+            pairlist = spec_model.pairlist
+            el_ctrl = spec_model.element_ctrl
 
         elif type(model_load) is XPyS.models.SpectraModel:
             mod = model_load.model
@@ -271,8 +276,13 @@ class spectra:
         for i in specific_points:
 
             if autofit:
+                # Load the autofit class out of the saved_model folder if it is not already loaded
                 if not hasattr(self,'autofit'):
-                    self.autofit = XPyS.autofit.autofit(self.esub,self.isub[i],self.orbital)
+                    # self.autofit = XPyS.autofit.autofit(self.esub,self.isub[i],self.orbital)
+                    self.autofit = self.get_autofit_model()
+
+                self.autofit.guess_params(self.isub[i],self.esub)
+
                 for par in self.autofit.guess_pars.keys():
                     self.params[par].value = self.autofit.guess_pars[par]
                     # self.par_guess_track[par].append(self.autofit.guess_pars[par])
@@ -305,7 +315,11 @@ class spectra:
 
         return data_pred - data            
             
-            
+    def get_autofit_model(self):
+        module = importlib.import_module('XPyS.saved_models.'+self.orbital+'.autoinit')
+        autoinit_class = getattr(module, 'AutoInit')
+        autoinit_instance = autoinit_class()
+        return autoinit_instance
             
     def plot_fitresults(self,specific_points = None, plot_with_background_sub = False,ref_lines = False,colors = None,infig = None, inaxs = None, offset = 0):
         """Function to plot the fit results
