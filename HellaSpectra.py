@@ -32,7 +32,7 @@ import os
 import glob
 import h5py
 
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, NMF
 from scipy.stats import pearsonr
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
@@ -484,9 +484,8 @@ class HellaSpectra:
         # ax.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
     ## Using dictionary
 
-    def make_spectra(self,params,mod,pairlist,number):
-        # TODO:
-        # Incorporate SpectraModel into this so pairlist and params dont need to specified separately
+    def make_spectra(self,spectra_model,number):
+
         """
         Make a bunch of simulated spectra using the parameters in the dataframe as bounds. Useful for training
         Machine Learning Models
@@ -503,8 +502,11 @@ class HellaSpectra:
             pairlist of prefixes in model object
 
         number: int
-            number of spectra togreate
+            number of spectra to create
         """
+        params = spectra_model.pars
+        mod = spectra_model.model
+        pairlist = spectra_model.pairlist
         spec_train = []
         par_train = []
 
@@ -563,16 +565,17 @@ class HellaSpectra:
         print('cumulative variance: %s'
             % str(np.cumsum(pca.explained_variance_ratio_ *100) ) ) 
 
-        for pc in enumerate(['P1','P2','P3']):
+        prin_comps = ['P{}'.format(i) for i in range(1,n_comps+1)]
+        for pc in enumerate(prin_comps):
             self.df[pc[1]] = pd.Series(X_tr[:,pc[0]], index = self.df.index)
 
 
         fig,ax = plt.subplots()
 
-        for i in range(3):
+        for i in range(n_comps):
             ax.plot(X_r.components_[i,:])
             
-        ax.legend(['PC1','PC2','PC3'],bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+        ax.legend(prin_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
         ax.set_title('Raw Data',fontsize = 18)
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
@@ -687,6 +690,52 @@ class HellaSpectra:
         ax.set_xlabel(X,fontsize = 16)
         ax.set_ylabel(Y,fontsize = 16)
         ax.set_zlabel(Z,fontsize = 16)
+
+
+    def nmf(self,n_comps = 3,nmf_kws = None):
+        """
+        Find Non-Negative Matrix Factorization of spectra
+
+        Parameters
+        ----------
+        n_comps: int
+            number of non-negative matrix components
+        
+        nmf_kws: dict
+            keywords to pass to sklearn.decomposition.NMF
+        """
+        if np.any(self.spectra < 0):
+            self.spectra[np.where(self.spectra < 0)] = 0
+
+        if nmf_kws is None:
+            nmf_kws = {}
+
+        # Calculate NMF
+        model = NMF(n_components=n_comps, random_state=0,**nmf_kws)
+
+        W = model.fit_transform(self.spectra)
+        H = model.components_
+
+        if self.info != []:
+            print(' '.join(self.info))
+
+
+        nmf_comps = ['nmf_{}'.format(i) for i in range(1,n_comps+1)]
+        for nmfc in enumerate(nmf_comps):
+            self.df[nmfc[1]] = pd.Series(W[:,nmfc[0]], index = self.df.index)
+
+
+        fig,ax = plt.subplots()
+
+        for i in range(n_comps):
+            ax.plot(H[i,:])
+
+        ax.legend(nmf_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+
+        ax.set_title('Raw Data',fontsize = 18)
+        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                    ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(18)
 
 
     def correlate(self,par,plotflag = True):
