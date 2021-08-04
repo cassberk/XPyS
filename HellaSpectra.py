@@ -101,7 +101,7 @@ class HellaSpectra:
                     else:
                         expload = experiment_name
                     # print(file.split('/')[-1],exps[0])
-                    datadict[file.split('/')[-1].split('.')[0]] = XPyS.io.load_spectra(filepath = fpath,experiment_name = expload,spec = spectra_name)
+                datadict[file.split('/')[-1].split('.')[0]] = XPyS.io.load_spectra(filepath = fpath,experiment_name = expload,spec = spectra_name)
                     # f.close()
 
         self.spectra_objects = datadict
@@ -711,7 +711,7 @@ class HellaSpectra:
             nmf_kws = {}
 
         # Calculate NMF
-        model = NMF(n_components=n_comps, random_state=0,**nmf_kws)
+        model = NMF(n_components=n_comps, random_state=0, **nmf_kws)
 
         W = model.fit_transform(self.spectra)
         H = model.components_
