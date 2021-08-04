@@ -84,7 +84,7 @@ def plot_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spe
     return _fig, _ax
 
 
-def compare_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = None, specify_names = None, recalc = False,\
+def compare_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, spectra_colors = cfg.spectra_colors(), specify_names = None, recalc = False,\
     specify_spectra = None, capsize = 20):
 
 
@@ -114,7 +114,7 @@ def compare_atomic_percents(sample_list,idx = None, error = 'std', width = 0.8, 
         elif type(idx[0]) is int:
             at_pct = [100*sample[1].__dict__[spectra[1]].atomic_percent[idx[sample[0]]] for sample in enumerate(sample_list)]
             at_pct_err = 0
-            
+        
         ax[spectra[0]].bar(np.arange(len(at_pct)), at_pct, yerr=at_pct_err,error_kw=dict(lw=3, capsize=0, capthick=3), color = spectra_colors[spectra[1]])
 
 
