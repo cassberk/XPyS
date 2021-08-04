@@ -244,7 +244,6 @@ def load_spectra_model(model):
         return
     print('Model loaded from:',model_filepath[0])
 
-        # f = h5py.File(model_filepath[0],'r')
     with h5py.File(model_filepath[0],'r') as f:
         
         # model
