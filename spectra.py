@@ -31,6 +31,7 @@ import glob
 import importlib
 from IPython import embed as shell
 
+import importlib
 
 class spectra:
 
@@ -278,8 +279,11 @@ class spectra:
             if autofit:
                 # Load the autofit class out of the saved_model folder if it is not already loaded
                 if not hasattr(self,'autofit'):
+                    autoinit_module_name = 'XPyS.saved_models.'+self.orbital+'.autoinit'
+                    autoinit_module = importlib.import_module(autoinit_module_name)
+                    self.autofit = autoinit_module.AutoInit()
                     # self.autofit = XPyS.autofit.autofit(self.esub,self.isub[i],self.orbital)
-                    self.autofit = self.get_autofit_model()
+                    # self.autofit = self.get_autofit_model()
 
                 self.autofit.guess_params(self.isub[i],self.esub)
 
