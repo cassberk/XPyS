@@ -1,4 +1,5 @@
 import numpy as np
+import lmfit as lm
 from copy import deepcopy as dc
 import XPyS
 from .helper_functions import index_of, guess_from_data
@@ -7,6 +8,7 @@ from IPython import embed as shell
 from tqdm.notebook import tqdm
 
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 import torch
 from torch import nn
@@ -161,13 +163,29 @@ class DeepNeuralNet(torch.nn.Module):
 
 class ParameterNet:
 
-    def __init__(self,parameter = None,train_specs = None,train_pars = None,net_model = None,net_info = None):
+    def __init__(self,train_energy = None, parameter = None,train_specs = None,train_pars = None,net_model = None,param_names = None):
         """
         
 
         Parameters
         ----------
+        train_energy: array
+            the energy values of the spectra used to train the network. This is essential since the energy values of the spectra to predict
+            will be different in which case the spectra must be interpolated at the same energy values used to train the network.
 
+        parameter: str
+            name of type of parameter, ex: "amplitude","center" or "sigma". This will create a list of the parameter names that are
+            fit in the neural network. Only used if building a new net.If a net is loaded the parameter names will be loaded when 
+            the net_model is loaded.
+
+        train_specs: 2d array
+            array of spectra to train the neural network on. Rows are spectra.
+
+        train_pars: dict
+            dictionary of the training parameters. key: parameeter, value: list or array of the parameters corresponding to the training spectra
+
+        net_model = None,
+        param_names = None
 
         Notes
         -----
@@ -178,21 +196,32 @@ class ParameterNet:
 
 
         """
-        self.train_spectra =  torch.from_numpy(train_specs).float()
-        self.param_names = [par for par in train_pars.keys() if parameter in par]
-        self.train_params = torch.from_numpy(np.asarray([[train_pars[par][i] for par in self.param_names] for i in range(len(train_pars[self.param_names[0]]))])).float()
-        # self.spectra_model = spectra_model
 
-        if net_model == None:
-            # if (parameter == 'center') or (parameter =='sigma'):
-            self.net_model = DeepNeuralNet(self.train_spectra.shape[1], 500, 1000, 700, 500, 200, 50, 4)
+        # The energy used to train the parameternet must be stored to compare it to the energy for the auto initialization. If they are different
+        # the spectra must be interpolated
+        self.train_energy = train_energy
 
-            # elif parameter == 'amplitude':
-            #     self.net_model = NeuralNet(self.train_spectra.shape[1], 100, 4)
+        # param_names is used for loading a model. It should be left as None if training
+        if param_names:
+            self.param_names = param_names
         
-        else:
-            self.net_model = net_model
 
+        if train_pars:
+            self.param_names = [par for par in train_pars.keys() if parameter in par]
+            self.train_params = torch.from_numpy(np.asarray([[train_pars[par][i] for par in self.param_names] for i in range(len(train_pars[self.param_names[0]]))])).float()
+        
+        if np.any(train_specs):
+            self.train_spectra =  torch.from_numpy(train_specs).float()
+
+        # If net_model is not specified then the default neural net is loaded
+        # if net_model == None:
+        #     self.load_net_model(DeepNeuralNet(self.train_spectra.shape[1], 500, 1000, 700, 500, 200, 50, len(self.param_names)))
+        
+        if net_model != None:
+            self.load_net_model(net_model)
+
+    def load_net_model(self,NeuralNetModel):
+        self.net_model = NeuralNetModel
 
     def train(self,n_epochs = 10,learn_rate = 0.01,optimizer = None):
         """
@@ -260,72 +289,34 @@ class ParameterNet:
         return loss
 
     
-    def predict(self,spectra):
+    def predict(self,spectra,energy):
+        """
+        
+        """
+        if not np.all(energy == self.train_energy):
+            print('interpolating...')
+            spectra = self.interp_spectra(spectra,energy)
 
         self.net_model.eval()
         _predict_pars = self.net_model(torch.from_numpy(spectra).float()).detach().numpy()
         predict_pars = {}
 
         for par in enumerate(self.param_names):
-            # print(par)
+
             predict_pars[par[1]] = _predict_pars[par[0]]
 
         return predict_pars
 
+    def interp_spectra(self,spectra,energy):
+        f = interp1d(energy, spectra,kind = 'cubic',fill_value = 'extrapolate')
+        ynew = f(self.train_energy)
 
-    # def check_spectra(self,hellaspecs,params,testidx):
-    #     """
-    #     Check the spectra from the neural network parameter outputs against a spectra from a 
-    #     HellaSpectra object
-
-    #     Parameters
-    #     ----------
-
-
-    #     Notes
-    #     -----
-
-
-    #     Examples
-    #     --------
-
-
-    #     """
-        
-    #     spec_test = hellaspecs.spectra[testidx]
-
-    #     self.net_model.eval()
-    #     testpars = self.net_model(torch.from_numpy(spec_test).float()).detach().numpy()
-
-    #     for par in enumerate(self.param_names):
-    #         if 'sigma' in par[1]:
-    #             print(par[1],hellaspecs.df_params[par[1]].iloc[testidx],testpars[par[0]])
-    #             params[par[1]].set(testpars[par[0]])
-                
-    #         elif 'center' in par[1]:
-    #             print(par[1],hellaspecs.df_params[par[1]].iloc[testidx],testpars[par[0]])
-    #             params[par[1]].set(testpars[par[0]])
-                
-    #         else:
-    #             print(par[1],hellaspecs.df_params[par[1]].iloc[testidx],testpars[par[0]])
-    #             params[par[1]].set(testpars[par[0]])
-
-    #     for par in [p for p in params.keys() if p not in self.param_names]:
-    #         params[par].set(hellaspecs.df_params[par].iloc[testidx])
-
-
-    #     plt.plot(spec_test,'o')
-    #     plt.plot(self.spectra_model.eval(params = params,x= hellaspecs.energy))
-
-
-
-
-
+        return ynew
 
 
 class SpectraModelNet:
 
-    def __init__(self,spectra_model,parameters,spec_train,par_train):
+    def __init__(self,train_energy = None,spectra_model = None,parameters = None,spec_train = None,par_train = None):
         """
         
 
@@ -342,32 +333,42 @@ class SpectraModelNet:
 
 
         """
-        self.spectra_model = spectra_model
-        self.params = parameters
+
+        self.train_energy = train_energy
+
+        if spectra_model:
+            self.spectra_model = spectra_model
+        if parameters:
+            self.params = parameters
+
         self.spec_train = spec_train
         self.par_train = par_train
 
-        self.amp_net = ParameterNet(parameter = 'amplitude',train_specs = self.spec_train, train_pars = self.par_train)
-        self.center_net = ParameterNet(parameter = 'center',train_specs = self.spec_train, train_pars = self.par_train)
-        self.sigma_net = ParameterNet(parameter = 'sigma',train_specs = self.spec_train, train_pars = self.par_train)
+
+    def initialize_parnets(self):
+        self.amp_net = ParameterNet(train_energy = self.train_energy,parameter = 'amplitude',train_specs = self.spec_train, train_pars = self.par_train)
+        self.center_net = ParameterNet(train_energy = self.train_energy,parameter = 'center',train_specs = self.spec_train, train_pars = self.par_train)
+        self.sigma_net = ParameterNet(train_energy = self.train_energy,parameter = 'sigma',train_specs = self.spec_train, train_pars = self.par_train)
 
 
 
-    def predict(self,spectra):
+    def predict(self,spectra,energy):
 
         predict_pars = {}
-        predict_pars.update(self.amp_net.predict(spectra))
-        predict_pars.update(self.center_net.predict(spectra))
-        predict_pars.update(self.sigma_net.predict(spectra))
+        predict_pars.update(self.amp_net.predict(spectra,energy))
+        predict_pars.update(self.center_net.predict(spectra,energy))
+        predict_pars.update(self.sigma_net.predict(spectra,energy))
 
         return predict_pars
 
+    def update_params(self,spectra,energy):
+        predict_pars = self.predict(spectra,energy)
+        for par,val in predict_pars.items():
+            self.params[par].set(val)       
 
     def check_spectra(self,spectra,energy):
 
-        predict_pars = self.predict(spectra)
-        for par,val in predict_pars.items():
-            self.params[par].set(val)
+        self.update_params(spectra,energy)
 
         fig, ax = plt.subplots()
         ax.plot(energy,spectra,'o')
@@ -377,18 +378,25 @@ class SpectraModelNet:
 
     def save_model(self,path):
         torch.save({
-            'amplitude': self.amp_net.net_model,\
-            'center': self.center_net.net_model,\
-            'sigma': self.sigma_net.net_model,\
+            'energy' : self.train_energy,\
+            'params' : self.params,\
+            'spectra_model' : self.spectra_model.dumps(),\
+            'amplitude': [self.amp_net.param_names, self.amp_net.net_model],\
+            'center': [self.center_net.param_names, self.center_net.net_model],\
+            'sigma': [self.sigma_net.param_names, self.sigma_net.net_model],\
                 }, path)
 
     def load_model(self,path):
 
         parameter_models = torch.load(path)
 
-        self.amp_net = ParameterNet(parameter = 'amplitude', net_model = parameter_models['amplitude'])
+        self.train_energy = parameter_models['energy']
+        self.params = parameter_models['params']
+        self.spectra_model = lm.model.Model(lambda x: x)
+        self.spectra_model = self.spectra_model.loads(parameter_models['spectra_model'])
+        self.amp_net = ParameterNet(train_energy = parameter_models['energy'], net_model = parameter_models['amplitude'][1],param_names = parameter_models['amplitude'][0])
         self.amp_net.net_model.eval()
-        self.center_net = ParameterNet(parameter = 'center', net_model = parameter_models['center'])
+        self.center_net = ParameterNet(train_energy = parameter_models['energy'],net_model = parameter_models['center'][1],param_names = parameter_models['center'][0])
         self.center_net.net_model.eval()
-        self.sigma_net = ParameterNet(parameter = 'sigma', net_model = parameter_models['sigma'])
+        self.sigma_net = ParameterNet(train_energy = parameter_models['energy'],net_model = parameter_models['sigma'][1],param_names = parameter_models['sigma'][0])
         self.sigma_net.net_model.eval()
