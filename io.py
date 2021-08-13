@@ -296,6 +296,7 @@ def load_sample(filepath = None, experiment_name = None):
     sample_obj = XPyS.sample.sample(overview=False)
     sample_obj.load_path = filepath
     sample_obj.experiment_name = experiment_name
+    sample_obj.load_err = []
 
     f= h5py.File(filepath,"r")
 
@@ -305,9 +306,10 @@ def load_sample(filepath = None, experiment_name = None):
     for attr in exp_attr:
         try:
             sample_obj.__dict__[attr] = f[experiment_name].attrs[attr]
-            print(sample_obj.__dict__[attr])
+            # print(sample_obj.__dict__[attr])
         except:
-            print('couldnt',attr)
+            sample_obj.load_err.append(attr)
+            # print('couldnt',attr)
             pass
 
     try:
@@ -363,6 +365,7 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
     spectra_obj = XPyS.spectra.spectra(spectra_name = spec)
     spectra_obj.load_path = filepath
     spectra_obj.experiment_name = experiment_name
+    spectra_obj.load_err = []
 
     # if openhdf5 == False:
     f= h5py.File(filepath,"r")
@@ -373,7 +376,8 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
     try:
         spectra_obj.positions = f[experiment_name][spec]['I'].attrs['Position']
     except:
-        print('couldnt load positions')
+        spectra_obj.load_err.append('Position')
+        # print('couldnt load positions')
         pass
     ##################################
     # Datasets
@@ -381,7 +385,8 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
         try:
             spectra_obj.__dict__[data] = f[experiment_name][spec][data][...]
         except:
-            print('couldnt',data)
+            spectra_obj.load_err.append(data)
+            # print('couldnt',data)
             pass
 
     # try:
@@ -400,14 +405,16 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
             p = lm.parameter.Parameters()
             spectra_obj.bgpars = [p.loads(f[experiment_name][spec]['bg'].attrs['bgpars'][...][i]) for i in range(len(f[experiment_name][spec]['bg'].attrs['bgpars']))]
     except:
-        print('couldnt bgpars')
+        spectra_obj.load_err.append('bgpars')
+        # print('couldnt bgpars')
         pass
     # bg_info
     try:
         spectra_obj.bg_info = json.loads(f[experiment_name].attrs['bg_info'])[spec]
         spectra_obj.bg_info[0] = tuple(spectra_obj.bg_info[0])
     except:
-        print('couldnt bginfo')
+        spectra_obj.load_err.append('bginfo')
+        # print('couldnt bginfo')
         pass
 
 
@@ -430,7 +437,8 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
     try:
         spectra_obj.mod = m.loads(f[experiment_name][spec]['mod'][...][0])
     except:
-        print('couldnt open mod')
+        spectra_obj.load_err.append('mod')
+        # print('couldnt open mod')
         pass            
     
     # params
@@ -438,7 +446,8 @@ def load_spectra(filepath = None, experiment_name = None,spec = None, openhdf5 =
     try:
         spectra_obj.params = [p.loads(f[experiment_name][spec]['mod'].attrs['params'][i]) for i in range(len(f[experiment_name][spec]['mod'].attrs['params']))][0]
     except:
-        print('couldnt open params')
+        spectra_obj.load_err.append('params')
+        # print('couldnt open params')
         pass
 
     # Attributes
