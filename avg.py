@@ -20,7 +20,7 @@ def read_avg(filepath):
     with open(filepath, encoding="utf8", errors='ignore') as f:
         lines = [line for line in f.readlines() if line != '\n']
 
-    print(filepath)
+    # print(filepath)
     AXESDICT = {}
     PROPERTIES = {}
     DATA = {}
@@ -157,18 +157,32 @@ def avg_to_hdf5(sample_name,experiment_name,avgfiles = None,savepath=None,force 
         filelist = glob.glob(avgfiles+'/*')
 
     if savepath == None:
-        save_location = '/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5')
+        # print(filelist)
+        # check to see if '/' needs to be in front of path. For creating sample file in current directory this is not needed
+        # if specifying full path then it is
+        if os.path.isdir(os.path.join(os.path.join(*filelist[0].split('/')[0:-1]))):
+            save_location = os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5')
+
+        elif os.path.isdir('/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]))):
+            save_location = '/'+os.path.join(os.path.join(*filelist[0].split('/')[0:-1]),sample_name+'.hdf5')
+
         print('save location is: ',save_location)
     else:
         save_location = savepath
 
     if force == False:
-        hdf = h5py.File(save_location,'r+')
+        hdf = h5py.File(save_location,'a')
+        if experiment_name in [grp for grp in hdf.keys()]:
+            raise FileExistsError('The experiment name already exists. Use force=True to delete current experiment or rename experiment')
+
     elif force == True:
-        hdf = h5py.File(save_location,'w')
-    
-    if experiment_name in [grp for grp in hdf.keys()]:
-        del hdf[experiment_name]
+        hdf = h5py.File(save_location,'a')
+        if experiment_name in [grp for grp in hdf.keys()]:
+            del hdf[experiment_name]
+
+    # Write to the file unless it exists, then throw an error
+    # hdf = h5py.File(save_location,'w-')
+
     experiment_group = hdf.require_group(experiment_name)
     element_scans = []
     all_scans = []
@@ -202,7 +216,7 @@ def avg_to_hdf5(sample_name,experiment_name,avgfiles = None,savepath=None,force 
             # print(spectra)
             for props,val in PROPERTIES.items():
                 experiment_group[spectra].attrs[props] = val
-            print(experiment_name,spectra)
+            # print(experiment_name,spectra)
             experiment_group[spectra].create_dataset('E', data = DATA['E'])   
             experiment_group[spectra].create_dataset('I', data = DATA['I'])
 
