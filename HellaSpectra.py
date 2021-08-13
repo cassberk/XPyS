@@ -170,24 +170,33 @@ class HellaSpectra:
         #     xnew = np.round(xnew,-1*d)
         # print(np.min(xnew),np.max(xnew))
 
-        try:
+        # try:
+            # first = True
+        df_list = []
+        for name,obj in self.spectra_objects.items():
+            # print(name)
+            n_data = len(obj.__dict__[dset[1]])
             first = True
-            for name,obj in self.spectra_objects.items():
-                print(name)
-                for i in range(len(obj.__dict__[dset[1]])):
-                    f = interp1d(obj.__dict__[dset[0]], obj.__dict__[dset[1]][i],kind = 'cubic')
-                    if not first:
-                        ynew = np.vstack((ynew,f(xnew)))
-                    else:
-                    # except NameError:
-                    #     print('and here')
-                        ynew = f(xnew)
-                        first = False
-        except:
-            print('Couldnt Interpolate',name)
-            return
+            for i in range(n_data):
+                f = interp1d(obj.__dict__[dset[0]], obj.__dict__[dset[1]][i],kind = 'cubic')
+                if not first:
+                    ynew = np.vstack((ynew,f(xnew)))
+                else:
+                # except NameError:
+                #     print('and here')
+                    ynew = f(xnew)
+                    first = False
+
+            df_list.append(pd.DataFrame(ynew,index = [name]*n_data))
+        df_spectra = pd.concat(df_list)
+        df_spectra.columns = xnew
+        # except:
+        #     print('Couldnt Interpolate',name)
+        #     return
+
         # print(ynew)
-        return xnew,ynew
+        # return xnew,ynew
+        return df_spectra
 
     def _auto_bounds(self,spectra_type = 'raw'):
         """Search through the spectra to get bounds for the interpolation since some spectra have 
@@ -221,7 +230,7 @@ class HellaSpectra:
         if check_max != []:
             raise ValueError('The specified bounds are outside the maximum values for', check_max )
 
-    def build_spectra_matrix(self,emin=None,emax=None,spectra_type = 'raw',subpars = None,step = 0.1):
+    def build_spectra_dataframe(self,emin=None,emax=None,spectra_type = 'raw',subpars = None,step = 0.1):
         """
         Build a 2d array of all of the spectra from the spectra objects
 
@@ -248,16 +257,16 @@ class HellaSpectra:
                 raise ValueError('You must specify subpars')
             # print('1.1')
             self.bgsuball(subpars = subpars)
-            print( subpars[0][0], subpars[0][1])
-            energy, spectra = self.interp_spectra(spectra_type = spectra_type,step = step)
+            # print( subpars[0][0], subpars[0][1])
+            self.spectra = self.interp_spectra(spectra_type = spectra_type,step = step)
 
         elif spectra_type =='raw':
             # print('1.2')
-            energy, spectra = self.interp_spectra(emin = emin, emax = emax, spectra_type = spectra_type,step = step)
+            self.spectra = self.interp_spectra(emin = emin, emax = emax, spectra_type = spectra_type,step = step)
 
-        self.energy = energy
-        self.spectra = spectra
-        self._spectra = spectra
+        # self.energy = energy
+        # self.spectra = spectra
+        # self._spectra = dc(self.spectra)
 
     def build_dataframe(self,spectra_dict=None,target = None,targetname = 'target',include_fit_params = True):
         """
