@@ -160,7 +160,7 @@ class CompoundSpectra:
        
         self.params[comp2].expr = expression
         
-        print(self.params[comp2].expr)
+        print(f"{comp2} expression: ",self.params[comp2].expr)
         
         
     def fit(self,fit_method = 'powell',specific_points = None,plotflag = True, track = False, fit_in_reverse = False,update_with_prev_pars = False, autofit = False):
@@ -201,7 +201,7 @@ class CompoundSpectra:
             self.fit_results = [[] for i in range(self.n_scans)]           
             
         if specific_points is None:
-            specific_points = np.arange(len(self.I))
+            specific_points = np.arange(self.n_scans)
 
         if fit_in_reverse == True:
             specific_points = specific_points[::-1]
@@ -231,7 +231,7 @@ class CompoundSpectra:
     
 
     def _copy_to_spectra(self):
-        """copy thefit results and the parameters to the spectra objects"""
+        """copy the fit results and the parameters to the spectra objects"""
         for spec in self.element_scans:
             self.__dict__[spec].fit_results = dc(self.fit_results)
             self.__dict__[spec].params = self.params.copy()
