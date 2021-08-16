@@ -122,8 +122,8 @@ class HellaSpectra:
             except:
                 print('Could Not bg_sub ',sample[0])
 
-    def interp_and_build(self,emin=None,emax=None,spectra_type = 'raw',target = None,step = 0.1):
-        """Interpolate the spectra to all have the same binding energies
+    def get_xnew(self,emin=None,emax=None,step = 0.1):
+        """Get the interpolation positions of the energy
 
         Parameters
         ----------
@@ -133,16 +133,12 @@ class HellaSpectra:
         emax: int,float
             maximum binding energy value
 
-        spectra_type: str
-            Option to interpolate the raw data or backgroudn subtracted data. ('raw' or 'sub')
-
         step: int, float
             step between binding energies 
         """
         # print('2')
         ynew = None
-        if spectra_type == 'raw':
-            dset = ['E','I']
+        if self.spectra_type == 'raw':
             if (emin == None) and (emax != None):
                 # print('2.1')
                 emin, _emax = self._auto_bounds()
@@ -152,16 +148,17 @@ class HellaSpectra:
             elif (emin == None) and (emax == None):
                 # print('2.3')
                 emin, emax = self._auto_bounds()
-            self._check_bounds(emin,emax,spectra_type = spectra_type)
+            self._check_bounds(emin,emax)
             xnew = np.arange(emin, emax, step)
 
-        elif spectra_type == 'sub':
+        elif self.spectra_type == 'sub':
             # print('2.4')
-            dset = ['esub','isub']
-            emin,emax = self._auto_bounds(spectra_type = 'sub')
+            emin,emax = self._auto_bounds()
 
-            self._check_bounds(emin,emax,spectra_type = spectra_type)
+            self._check_bounds(emin,emax)
             xnew = np.arange(emin, emax, step)
+
+        return xnew
             # probably want to make the spacing even given by ev step 0.1 but fuck it for now.
         # print(emin,emax)
         # xnew = np.arange(emin, emax+step, step)
@@ -172,27 +169,45 @@ class HellaSpectra:
 
         # try:
             # first = True
+
+    def interp_and_build(self,emin=None,emax=None,step = 0.1):
+        """Interpolate the spectra to all have the same binding energies
+
+        Parameters
+        ----------
+        emin: int,float
+            minimum binding energy value
+
+        emax: int,float
+            maximum binding energy value
+
+        step: int, float
+            step between binding energies 
+        """
+
+        ynew = None
+        xnew = self.get_xnew(emin=emin,emax=emax,step = 0.1)
+        
         df_list = []
         df_params_list = []
         start_idx = 0
         for name,spectra_obj in self.spectra_objects.items():
 
-            n_data = len(spectra_obj.__dict__[dset[1]])
+            n_data = len(spectra_obj.__dict__[self.dset[1]])
 
             idx_id = np.arange(start_idx,start_idx+n_data)  # Need an index id to perform joins on different dataframes
             start_idx = start_idx+n_data
             first = True
             for i in range(n_data):
-                f = interp1d(spectra_obj.__dict__[dset[0]], spectra_obj.__dict__[dset[1]][i],kind = 'cubic')
+                f = interp1d(spectra_obj.__dict__[self.dset[0]], spectra_obj.__dict__[self.dset[1]][i],kind = 'cubic')
                 if not first:
                     ynew = np.vstack((ynew,f(xnew)))
                 else:
-                # except NameError:
-                #     print('and here')
                     ynew = f(xnew)
                     first = False
-            if target != None:
-                df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data,[target[name]]*n_data]))
+            if self.target != None:
+                df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data,[self.target[name]]*n_data]))
+                
             else:
                 df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data]))
 
@@ -201,44 +216,43 @@ class HellaSpectra:
                             for i in range(len(spectra_obj.fit_results))] \
                     for key in  spectra_obj.fit_results[0].params.valuesdict().keys()}
 
-
-                df_params_list.append(pd.DataFrame(_dd,index = [idx_id,[name]*len(spectra_obj.fit_results)]))
+                if self.target != None:
+                    df_params_list.append(pd.DataFrame(_dd,index = [idx_id,[name]*len(spectra_obj.fit_results),[self.target[name]]*n_data]))
+                else:
+                    df_params_list.append(pd.DataFrame(_dd,index = [idx_id,[name]*len(spectra_obj.fit_results)]))
 
             
         df_spectra = pd.concat(df_list)
         df_spectra.columns = xnew
         df_params = pd.concat(df_params_list) 
-
+        
+        if self.target != None:
+            df_spectra.index.set_names(['id', 'name','target'], inplace=True)
+            df_params.index.set_names(['id', 'name','target'], inplace=True)
+        else:
+            df_spectra.index.set_names(['id', 'name'], inplace=True)
+            df_params.index.set_names(['id', 'name'], inplace=True)
         return df_spectra, df_params
 
 
 
-    def _auto_bounds(self,spectra_type = 'raw'):
+    def _auto_bounds(self):
         """Search through the spectra to get bounds for the interpolation since some spectra have 
         different binding energy ranges
         """
-        # print('3')
-        if spectra_type =='raw':
-            dset = 'E'
-        elif spectra_type == 'sub':
-            dset = 'esub'
-        largest_min_value = np.max([np.min(so[1].__dict__[dset]) for so in self.spectra_objects.items()])
-        smallest_max_value = np.min([np.max(so[1].__dict__[dset]) for so in self.spectra_objects.items()])
+        largest_min_value = np.max([np.min(so[1].__dict__[self.dset[0]]) for so in self.spectra_objects.items()])
+        smallest_max_value = np.min([np.max(so[1].__dict__[self.dset[0]]) for so in self.spectra_objects.items()])
 
         emin = (np.round(100*largest_min_value,2)+1)/100
         emax = (np.round(100*smallest_max_value,2)-1)/100
 
         return emin,emax
 
-    def _check_bounds(self,min_bnd,max_bnd,spectra_type = 'raw'):
+    def _check_bounds(self,min_bnd,max_bnd):
         """check to make sure the bounds are not outside the binding energies of any of the spectra"""
-        # print('4')
-        if spectra_type =='raw':
-            dset = 'E'
-        elif spectra_type =='sub':
-            dset = 'esub'
-        check_min = [so[0] for so in self.spectra_objects.items() if not np.min(np.round(so[1].__dict__[dset],2)) <= min_bnd <=np.max(np.round(so[1].__dict__[dset],2))]
-        check_max = [so[0] for so in self.spectra_objects.items() if not np.min(np.round(so[1].__dict__[dset],2)) <= max_bnd <=np.max(np.round(so[1].__dict__[dset],2))]
+
+        check_min = [so[0] for so in self.spectra_objects.items() if not np.min(np.round(so[1].__dict__[self.dset[0]],2)) <= min_bnd <=np.max(np.round(so[1].__dict__[self.dset[0]],2))]
+        check_max = [so[0] for so in self.spectra_objects.items() if not np.min(np.round(so[1].__dict__[self.dset[0]],2)) <= max_bnd <=np.max(np.round(so[1].__dict__[self.dset[0]],2))]
         
         if check_min !=[]:
             raise ValueError('The specified bounds are outside the minimum values for', check_min )
@@ -264,91 +278,27 @@ class HellaSpectra:
             list of the background subtraction parameters. See spectra.bg_sub
 
         step: int, float
-            step between binding energies        
+            step between binding energies     
+
+        target: dict, None
+            Dictionary of the target    
         """
-        
-        if spectra_type == 'sub':
+        self.spectra_type = spectra_type
+        self.target = target
+
+
+        if self.spectra_type == 'sub':
+            self.dset = ['esub','isub']
+
             if subpars == None:
                 raise ValueError('You must specify subpars')
             self.bgsuball(subpars = subpars)
-            self.spectra, self.params = self.interp_and_build(spectra_type = spectra_type,step = step,target = target)
-
-        elif spectra_type =='raw':
-            self.spectra,self.params = self.interp_and_build(emin = emin, emax = emax, spectra_type = spectra_type,step = step)
-
-
-    def build_dataframe(self,spectra_dict=None,target = None,targetname = 'target',include_fit_params = True):
-        """
-        Build a dataframe out of the spectra array as well as the parameters from the spectra objects fit_results
-
-        Parameters
-        ----------
-        spectra_dict: dict
-            option to input dictionary of spectra objects. If not specified it will just use the self.spectra_objects dict
-
-        target: dict
-            dictionary of classifiers for different samples. Key is the sample name and value is the integer classifier.
-
-        targetname: str
-            Name of the classifier.
-
-        include_fit_params: bool
-            Option to include the fit_result parameters into the dataframe. Default is True   
-        """
-        
-        self.targetname = targetname
-        if spectra_dict is None:
-            spectra_dict = self.spectra_objects
-
+        elif self.spectra_type == 'raw':
+            self.dset = ['E','I']
             
-        # i = 0
-        # for sample in self.spectra_objects.items():
-
-        #     print(sample[0],sample[1])
-            
-        #     if include_fit_params:
-
-        #         _dd = {key: [sample[1].fit_results[i].params.valuesdict()[key] \
-        #                     for i in range(len( sample[1].fit_results))] \
-        #             for key in  sample[1].fit_results[0].params.valuesdict().keys()}       
-
-        #         dftemp = pd.DataFrame(_dd)
-        #         dftemp['sample'] = [sample[0]]*len(sample[1].fit_results)
-        #     if target != None:
-        #         if type(target) == dict:
-        #             dftemp[self.targetname] = [target[sample[0]]]*len(sample[1].fit_results)
-        #             print(sample[0],len(sample[1].fit_results))
-        #     elif target is None:
-        #         dftemp[self.targetname] = [0]*len(sample[1].fit_results)
-
-        #     try:
-        #         param_df = param_df.append(dftemp)
-        #     except:
-        #         param_df = dftemp
-
-        #     clear_output(wait = True)
-
-        df_list = []
-        for sample in self.spectra_objects.items():
-
-            print(sample[0],sample[1])
-
-        #     if include_fit_params:
-            if hasattr(sample[1],'fit_results'):
-                _dd = {key: [sample[1].fit_results[i].params.valuesdict()[key] \
-                            for i in range(len( sample[1].fit_results))] \
-                    for key in  sample[1].fit_results[0].params.valuesdict().keys()}
+        self.spectra, self.params = self.interp_and_build(emin = emin, emax = emax,step = step)
 
 
-                df_list.append(pd.DataFrame(_dd,index = [sample[0]]*len(sample[1].fit_results)))
-
-
-        self.params = pd.concat(df_list)            
-
-        # self.df_spectra = pd.DataFrame(self.spectra,columns = self.energy)
-        # self.df_params = param_df.reset_index(drop = True)
-        # self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
-        # self._df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
 
     def reset(self):
         """Reset spectra array and dataframe to initial loaded states"""
