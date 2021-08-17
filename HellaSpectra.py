@@ -39,13 +39,15 @@ class HellaSpectra:
     Class for holding lots of spectra objects as well as their spectra in matrix and dataframe format. Used
     for statistical analysis and data exploration.
     """
-    def __init__(self,spectra=None):
+    def __init__(self,spectra_objects, spectra=None):
         self.info = []
-    """
+        self.spectra_objects = spectra_objects
+        """
         
         Parameters
         ----------
-
+        spectra_objects: dictionary
+            dictionary of spectra objects. Keys are sample names or any identifier and values are XPyS.spectra.spectra object insances
 
         Notes
         -----
@@ -56,47 +58,7 @@ class HellaSpectra:
 
 
         """
-    def load_spectra_objs(self,data_paths,spectra_name,experiment_name = None, exclude_list = []):
-        """
-        Load the sample objects into a dictionary
-
-        Parameters
-        ----------
-        data_paths: list
-            list of datapaths to the sample objects to load
-
-        spectra_name: str
-            string of the spectra orbital
-
-        experiment_name: str
-            name of the experiment in the .hdf5 sample file
-        
-        exclude_list: list
-            list of sample names to exclude from loading
-
-        Notes
-        -----
-
-
-        Examples
-        --------
-
-        """
-        datadict = {}
-        for file in data_paths:
-            print(any([exclude in file for exclude in exclude_list]))
-            if not any([exclude in file for exclude in exclude_list]):
-                fpath = os.path.join(cfg.datarepo['stoqd'],file)
-                with h5py.File(fpath,'r') as f:
-                    if experiment_name is None:
-                        expload = [k for k in f.keys()][0]
-                    else:
-                        expload = experiment_name
-                    # print(file.split('/')[-1],exps[0])
-                datadict[file.split('/')[-1].split('.')[0]] = XPyS.io.load_spectra(filepath = fpath,experiment_name = expload,spec = spectra_name)
-                    # f.close()
-
-        self.spectra_objects = datadict
+    
 
     def bgsuball(self,subpars):
         """
@@ -601,13 +563,14 @@ class HellaSpectra:
         """
         fig,(ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
 
-        number_of_plots=len(self.spectra_objects.keys())
+        sample_names = list(self.pc.index.levels[1])
+        n_samples=len(sample_names)
         colormap = plt.cm.nipy_spectral
-        colors = [colormap(i) for i in np.linspace(0, 1,number_of_plots)]
+        colors = [colormap(i) for i in np.linspace(0, 1,n_samples)]
         ax1.set_prop_cycle('color', colors)
         ax2.set_prop_cycle('color', colors)
 
-        for s in self.spectra_objects.keys():
+        for sample in sample_names:
             # print(s)
             if self.df[self.df['sample']==s][self.targetname].drop_duplicates().values[0] == 0:
                 mark = '.'
