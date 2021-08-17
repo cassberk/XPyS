@@ -4,10 +4,6 @@ from IPython.display import display, clear_output
 from ipywidgets import GridspecLayout
 from ipywidgets.widgets.interaction import show_inline_matplotlib_plots
 
-import time
-import threading
-import logging
-import math
 import numpy as np
 import pandas as pd
 from copy import deepcopy as dc
@@ -16,10 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.cm as cm
 
 from tqdm import tqdm_notebook as tqdm
-import pickle
-import lmfit as lm
 
-import sys
 import XPyS
 from XPyS import bkgrds as backsub
 from .helper_functions import index_of, guess_from_data
@@ -29,7 +22,6 @@ import XPyS.config as cfg
 import XPyS.VAMAS
 import XPyS.autofit
 import os
-import glob
 import h5py
 
 from sklearn.decomposition import PCA, NMF
@@ -122,7 +114,7 @@ class HellaSpectra:
             except:
                 print('Could Not bg_sub ',sample[0])
 
-    def get_xnew(self,emin=None,emax=None,step = 0.1):
+    def _get_xnew(self,emin=None,emax=None,step = 0.1):
         """Get the interpolation positions of the energy
 
         Parameters
@@ -170,8 +162,9 @@ class HellaSpectra:
         # try:
             # first = True
 
-    def interp_and_build(self,emin=None,emax=None,step = 0.1):
-        """Interpolate the spectra to all have the same binding energies
+    def _interp_and_build(self,emin=None,emax=None,step = 0.1):
+        """Interpolate the spectra to all have the same binding energies using _get_xnew then build the
+        spectra and the params dataframes.
 
         Parameters
         ----------
@@ -186,7 +179,7 @@ class HellaSpectra:
         """
 
         ynew = None
-        xnew = self.get_xnew(emin=emin,emax=emax,step = 0.1)
+        self.energy = self._get_xnew(emin=emin,emax=emax,step = 0.1)
         
         df_list = []
         df_params_list = []
@@ -198,12 +191,13 @@ class HellaSpectra:
             idx_id = np.arange(start_idx,start_idx+n_data)  # Need an index id to perform joins on different dataframes
             start_idx = start_idx+n_data
             first = True
+            # Spectra DataFrame
             for i in range(n_data):
                 f = interp1d(spectra_obj.__dict__[self.dset[0]], spectra_obj.__dict__[self.dset[1]][i],kind = 'cubic')
                 if not first:
-                    ynew = np.vstack((ynew,f(xnew)))
+                    ynew = np.vstack((ynew,f(self.energy)))
                 else:
-                    ynew = f(xnew)
+                    ynew = f(self.energy)
                     first = False
             if self.target != None:
                 df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data,[self.target[name]]*n_data]))
@@ -211,6 +205,7 @@ class HellaSpectra:
             else:
                 df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data]))
 
+            # Parameters DataFrame
             if hasattr(spectra_obj,'fit_results'):
                 _dd = {key: [spectra_obj.fit_results[i].params.valuesdict()[key] \
                             for i in range(len(spectra_obj.fit_results))] \
@@ -223,15 +218,19 @@ class HellaSpectra:
 
             
         df_spectra = pd.concat(df_list)
-        df_spectra.columns = xnew
+        df_spectra.columns = self.energy
+        
+
         df_params = pd.concat(df_params_list) 
         
+        # Add names to the indices
         if self.target != None:
             df_spectra.index.set_names(['id', 'name','target'], inplace=True)
             df_params.index.set_names(['id', 'name','target'], inplace=True)
         else:
             df_spectra.index.set_names(['id', 'name'], inplace=True)
             df_params.index.set_names(['id', 'name'], inplace=True)
+
         return df_spectra, df_params
 
 
@@ -286,6 +285,10 @@ class HellaSpectra:
         self.spectra_type = spectra_type
         self.target = target
 
+        if target != None:
+            if sorted(list(self.spectra_objects.keys())) != sorted(list(self.target.keys())):
+                raise KeyError('There is a spectra object that is not in the target dictionary')
+
 
         if self.spectra_type == 'sub':
             self.dset = ['esub','isub']
@@ -296,27 +299,27 @@ class HellaSpectra:
         elif self.spectra_type == 'raw':
             self.dset = ['E','I']
             
-        self.spectra, self.params = self.interp_and_build(emin = emin, emax = emax,step = step)
+        self.spectra, self.params = self._interp_and_build(emin = emin, emax = emax,step = step)
+        self._spectra = self.spectra
 
 
 
     def reset(self):
         """Reset spectra array and dataframe to initial loaded states"""
         self.spectra = dc(self._spectra)
-        self.df = dc(self._df)
         self.info = []
 
     def normalize(self):
         """Normalize all of the spectra"""
-        _yN = np.empty(self.spectra.shape)
+        _yN = np.empty(self.spectra.values.shape)
 
         for i in range(len(_yN)):
-            _yN[i,:] = self.spectra[i,:]/np.trapz(self.spectra[i,:])
+            _yN[i,:] = self.spectra.values[i,:]/np.trapz(self.spectra.values[i,:])
 
-        self.spectra = _yN
+        self.spectra = pd.DataFrame(_yN,columns = self.spectra.columns,index = self.spectra.index)
         self._update_info('Normalized')
 
-    def plot_spec(self,offset = 0,avg = False):
+    def plot_spectra(self,offset = 0,avg = False):
         """
         Plot all the spectra
 
@@ -328,11 +331,18 @@ class HellaSpectra:
         avg: bool
             Option to plot mean spectra. Default False
         """
+        fig, ax = plt.subplots()
         if not avg:
-            for i in range(len(self.spectra)):
-                plt.plot(self.energy,self.spectra[i,:]+i*offset)
+            for i in range(len(self.spectra.values)):
+                ax.plot(self.energy,self.spectra.values[i,:]+i*offset)
         if avg:
-            plt.plot(self.energy,self.spectra.mean(axis=0))
+            ax.plot(self.energy,self.spectra.values.mean(axis=0))
+
+        ax.set_xlabel('Binding Energy',fontsize = 15)
+        if 'Normalized' in self.info:
+            ax.set_ylabel('Counts/sec (N.U.)',fontsize = 15)
+        else:
+            ax.set_ylabel('Counts/sec',fontsize = 15)
 
     def _update_info(self,message):
         """Update order of operations on the spectra array to keep track processing history"""
@@ -382,11 +392,10 @@ class HellaSpectra:
             Guess position of the peak. guess_from_data() will search in vicinity for the maximum
         
         """
-        fig = plt.figure()
         if energy == None:
             energy = self.energy
 
-        spectra_matrix = self.spectra
+        spectra_matrix = self.spectra.values
 
         cen = np.empty(len(spectra_matrix))
         amp = np.empty(len(spectra_matrix))
@@ -411,15 +420,22 @@ class HellaSpectra:
                 mv_spec[i] = np.asarray([0]*np.abs(mv_pts)+list(spectra_matrix[i][:mv_pts]))
 
         if plotflag:
+            fig,ax = plt.subplots()
             for i in range(len(spectra_matrix)):
-                plt.plot(mv_spec[i])
+                ax.plot(mv_spec[i])
+
+            ax.set_xlabel('Binding Energy',fontsize = 15)
+            
+            if 'Normalized' in self.info:
+                ax.set_ylabel('Counts/sec (N.U.)',fontsize = 15)
+            else:
+                ax.set_ylabel('Counts/sec',fontsize = 15)
 
             plt.axvline(index_of(energy,peak_pos))
 
-        self.spectra_aligned_pos = peak_pos
-        self.spectra = mv_spec
+        self.aligned_pos = peak_pos
+        self.spectra = pd.DataFrame(mv_spec,columns = self.spectra.columns,index = self.spectra.index)
 
-        self.df = pd.DataFrame(self.spectra,columns = self.energy).join(self.df_params)
         self._update_info('adjusted to '+str(peak_pos))
 
 
