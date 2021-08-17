@@ -160,7 +160,7 @@ class spectra:
 
 
         """     
-        print(self.orbital)
+        # print(self.orbital)
         if not subpars == None:
             self.bg_info = subpars
 
