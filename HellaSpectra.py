@@ -200,10 +200,10 @@ class HellaSpectra:
                     ynew = f(self.energy)
                     first = False
             if self.target != None:
-                df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data,[self.target[name]]*n_data]))
+                df_list.append(pd.DataFrame(ynew,index = [[self.target[name]]*n_data,[name]*n_data,idx_id]))
                 
             else:
-                df_list.append(pd.DataFrame(ynew,index = [idx_id,[name]*n_data]))
+                df_list.append(pd.DataFrame(ynew,index = [[0]*n_data,[name]*n_data,idx_id]))
 
             # Parameters DataFrame
             if hasattr(spectra_obj,'fit_results'):
@@ -212,9 +212,9 @@ class HellaSpectra:
                     for key in  spectra_obj.fit_results[0].params.valuesdict().keys()}
 
                 if self.target != None:
-                    df_params_list.append(pd.DataFrame(_dd,index = [idx_id,[name]*len(spectra_obj.fit_results),[self.target[name]]*n_data]))
+                    df_params_list.append(pd.DataFrame(_dd,index = [[self.target[name]]*n_data,[name]*n_data,idx_id]))
                 else:
-                    df_params_list.append(pd.DataFrame(_dd,index = [idx_id,[name]*len(spectra_obj.fit_results)]))
+                    df_params_list.append(pd.DataFrame(_dd,index = [[0]*len(spectra_obj.fit_results),[name]*len(spectra_obj.fit_results),idx_id]))
 
             
         df_spectra = pd.concat(df_list)
@@ -224,12 +224,12 @@ class HellaSpectra:
         df_params = pd.concat(df_params_list) 
         
         # Add names to the indices
-        if self.target != None:
-            df_spectra.index.set_names(['id', 'name','target'], inplace=True)
-            df_params.index.set_names(['id', 'name','target'], inplace=True)
-        else:
-            df_spectra.index.set_names(['id', 'name'], inplace=True)
-            df_params.index.set_names(['id', 'name'], inplace=True)
+        # if self.target != None:
+        df_spectra.index.set_names(['target', 'name','id'], inplace=True)
+        df_params.index.set_names(['target', 'name','id'], inplace=True)
+        # else:
+            # df_spectra.index.set_names(['id', 'name'], inplace=True)
+            # df_params.index.set_names(['id', 'name'], inplace=True)
 
         return df_spectra, df_params
 
@@ -355,7 +355,7 @@ class HellaSpectra:
             self.info.append(message)
 
 
-    def peak_tracker(self,peak_pos,energy= None,spectra_matrix=None,plotflag = True):
+    def peak_tracker(self,peak_pos,energy= None,spectra_matrix=None,plotflag = True,**kws):
         """
         Get the peak positions for all the spectra using guess_from_data() in helper_functions module.
         Then plot the differences in the peak positions from the peak_pos parameter
@@ -369,20 +369,20 @@ class HellaSpectra:
         if energy ==None:
             energy = self.energy
         if spectra_matrix == None:
-            spectra_matrix = self.spectra
+            spectra_matrix = self.spectra.values
         
         cen = np.empty(len(spectra_matrix))
         amp = np.empty(len(spectra_matrix))
 
         for i in range(len(spectra_matrix)):
-            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],peakpos = peak_pos)
+            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],peakpos = peak_pos,**kws)
 
         self.peaktrack = cen-peak_pos
         if plotflag:
             plt.plot(self.peaktrack,'o-')
 
 
-    def align_peaks(self,peak_pos,energy=None,plotflag = True):
+    def align_peaks(self,peak_pos,energy=None,plotflag = True,**kws):
         """
         Align all the peaks.  Will search for maximum of peak aroudn peak_pos and then adjust spectra to peak_pos
 
@@ -404,7 +404,7 @@ class HellaSpectra:
 
         for i in range(len(spectra_matrix)):
 
-            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],peakpos = peak_pos)
+            amp[i],cen[i] = guess_from_data(energy,spectra_matrix[i],peakpos = peak_pos,**kws)
 
             mv_ev = np.round(cen[i] - peak_pos,2)
 
@@ -553,8 +553,8 @@ class HellaSpectra:
         pca = PCA(n_components=n_comps)
 
         # PCA of raw signal
-        X_r = pca.fit(self.spectra)
-        X_tr = pca.fit_transform(self.spectra)
+        X_r = pca.fit(self.spectra.values)
+        X_tr = pca.fit_transform(self.spectra.values)
 
         if self.info != []:
             print(' '.join(self.info))
@@ -565,14 +565,18 @@ class HellaSpectra:
             % str(np.cumsum(pca.explained_variance_ratio_ *100) ) ) 
 
         prin_comps = ['P{}'.format(i) for i in range(1,n_comps+1)]
-        for pc in enumerate(prin_comps):
-            self.df[pc[1]] = pd.Series(X_tr[:,pc[0]], index = self.df.index)
+        # Build Dictionary of principal components
+        pc = {prin_comps[i] : X_tr[:,i] for i in range(len(prin_comps))}
+        self.pc = pd.DataFrame(pc,index = self.spectra.index)
+        self.pc_vec = X_r.components_
+        # for pc in enumerate(prin_comps):
+        #     self.df[pc[1]] = pd.Series(X_tr[:,pc[0]], index = self.spectra.index)
 
 
         fig,ax = plt.subplots()
 
         for i in range(n_comps):
-            ax.plot(X_r.components_[i,:])
+            ax.plot(self.pc_vec[i,:])
             
         ax.legend(prin_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
