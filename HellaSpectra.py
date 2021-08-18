@@ -561,29 +561,26 @@ class HellaSpectra:
             principal component to plot on y-axis
 
         """
+
         fig,(ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
 
         sample_names = list(self.pc.index.levels[1])
         n_samples=len(sample_names)
+        n_targets = len(self.pc.index.levels[0])
+
         colormap = plt.cm.nipy_spectral
         colors = [colormap(i) for i in np.linspace(0, 1,n_samples)]
+        colors_targets = [colormap(i) for i in np.linspace(0, 1,n_targets)]
         ax1.set_prop_cycle('color', colors)
-        ax2.set_prop_cycle('color', colors)
+        ax2.set_prop_cycle('color', colors_targets)
 
+        # First plot the principal components color coded by sample
         for sample in sample_names:
-            # print(s)
-            if self.df[self.df['sample']==s][self.targetname].drop_duplicates().values[0] == 0:
-                mark = '.'
-            else:
-                mark = 'x'
-            # mark = 'bo'
-            ax1.plot(self.df[self.df['sample']==s][x].values,self.df[self.df['sample']==s][y].values,mark,markersize = 10)
-            
-            if self.df[self.df['sample']==s][self.targetname].drop_duplicates().values[0] == 0:
-                mark = 'bo'
-            else:
-                mark = 'rx'
-            ax2.plot(self.df[self.df['sample']==s][x].values,self.df[self.df['sample']==s][y].values,mark,markersize = 10)
+            ax1.plot(self.pc.xs(sample,level = 'name')[x].values,self.pc.xs(sample,level = 'name')[y].values,'o',markersize = 10)
+        
+        # Next plot the principal components color coded by target
+        for target in self.pc.index.levels[0]:  # Level 0 is the target level
+            ax2.plot(self.pc.xs(target,level = 'target')[x].values,self.pc.xs(target,level = 'target')[y].values,'o',markersize = 10)
 
         for ax in [ax1, ax2]:
             ax.set_title('Principal Components')
@@ -597,10 +594,11 @@ class HellaSpectra:
 
         ax1.legend(list(self.spectra_objects.keys()),bbox_to_anchor=(1.05, 1.2), loc='upper left',fontsize = 18)
 
-        red_patch = mpatches.Patch(color='red', label=self.targetname)
-        blue_patch = mpatches.Patch(color='blue', label='No '+self.targetname)
+        leg_patches = []
+        for tar in enumerate(self.pc.index.levels[0]):
+            leg_patches.append(mpatches.Patch(color=colors_targets[tar[0]], label=tar[1]))
 
-        ax2.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
+        ax2.legend(handles=leg_patches,bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
         fig.tight_layout()
 
 
