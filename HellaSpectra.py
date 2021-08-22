@@ -618,43 +618,47 @@ class HellaSpectra:
             principal component to plot on z-axis, Default 'P3'
         """
 
-        fig = plt.figure(figsize = (20,8))
-        ax = fig.add_subplot(1, 2, 1, projection='3d')
-        
-        number_of_plots=len(self.spectra_objects)
+        fig = plt.figure(figsize = (12,4))
+        ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+        ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+
+        sample_names = list(self.pc.index.levels[1])
+        n_samples=len(sample_names)
+        n_targets = len(self.pc.index.levels[0])
+
         colormap = plt.cm.nipy_spectral
-        colors = [colormap(i) for i in np.linspace(0, 1,number_of_plots)]
-        ax.set_prop_cycle('color', colors)
+        colors = [colormap(i) for i in np.linspace(0, 1,n_samples)]
+        colors_targets = [colormap(i) for i in np.linspace(0, 1,n_targets)]
+        ax1.set_prop_cycle('color', colors)
+        ax2.set_prop_cycle('color', colors_targets)
+
+        colormap = plt.cm.nipy_spectral
+        colors = [colormap(i) for i in np.linspace(0, 1,n_samples)]
+        colors_targets = [colormap(i) for i in np.linspace(0, 1,n_targets)]
+        ax1.set_prop_cycle('color', colors)
+        ax2.set_prop_cycle('color', colors_targets)
         
-        for s in self.spectra_objects.keys():
-            if label == 'samples':
-                if self.df[self.df['sample']==s][self.targetname].drop_duplicates().values[0] == 0:
-                    mark = '.'
-                else:
-                    mark = 'x'
-                ax.plot(self.df[self.df['sample']==s][X].values,self.df[self.df['sample']==s][Y].values,self.df[self.df['sample']==s][Z].values,mark,markersize = 10)
-                ax.legend(list(self.spectra_objects.keys()),bbox_to_anchor=(1, 1.1), loc='upper left',fontsize = 18)
-                
 
-            elif label =='target':
-                if self.df[self.df['sample']==s][self.targetname].drop_duplicates().values[0] == 0:
-                    mark = 'bo'
-                else:
-                    mark = 'rx'
-                ax.plot(self.df[self.df['sample']==s][X].values,self.df[self.df['sample']==s][Y].values,self.df[self.df['sample']==s][Z].values,mark,markersize = 10)
+        # First plot the principal components color coded by sample
+        for sample in sample_names:
+            ax1.plot(self.pc.xs(sample,level = 'name')[X].values,self.pc.xs(sample,level = 'name')[Y].values,self.pc.xs(sample,level = 'name')[Z].values,'o',markersize = 10)
 
-                red_patch = mpatches.Patch(color='red', label='BOE')
-                blue_patch = mpatches.Patch(color='blue', label='No BOE')
+        # Next plot the principal components color coded by target
+        for target in self.pc.index.levels[0]:  # Level 0 is the target level
+            ax2.plot(self.pc.xs(target,level = 'target')[X].values,self.pc.xs(target,level = 'target')[Y].values,self.pc.xs(target,level = 'target')[Z].values,'o',markersize = 10)
+        
+        for ax in [ax1,ax2]:
+            ax.set_xlabel(X,fontsize = 16)
+            ax.set_ylabel(Y,fontsize = 16)
+            ax.set_zlabel(Z,fontsize = 16)
 
-                ax.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
-            
+        # ax1.legend(list(self.spectra_objects.keys()),bbox_to_anchor=(1.05, 1.2), loc='upper left',fontsize = 18)
+        # leg_patches = []
+        # for tar in enumerate(self.pc.index.levels[0]):
+        #     leg_patches.append(mpatches.Patch(color=colors_targets[tar[0]], label=tar[1]))
+        # ax2.legend(handles=leg_patches,bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
+
         fig.tight_layout()
-        
-        
-        ax.set_xlabel(X,fontsize = 16)
-        ax.set_ylabel(Y,fontsize = 16)
-        ax.set_zlabel(Z,fontsize = 16)
-
 
     def nmf(self,n_comps = 3,nmf_kws = None):
         """
