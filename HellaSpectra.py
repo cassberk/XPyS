@@ -790,7 +790,7 @@ class HellaSpectra:
                     axs[a].plot(fulldf[Xs[j]].values,fulldf[Ys[i]].values,'o')
                     corrmat[i][j], _ = pearsonr(fulldf[Xs[j]].values, fulldf[Ys[i]].values) 
 
-                    axs[a].set_title('Pearsons correlation: %.3f' % corrmat[i][j],fontsize = 18)
+                    axs[a].set_title('Pearsons correlation: %.3f' % corrmat[i][j],fontsize = 16)
                     axs[a].set_xlabel(Xs[j],fontsize = 26)
                     axs[a].set_xticklabels('')
                     axs[a].set_yticklabels('')
@@ -799,13 +799,6 @@ class HellaSpectra:
 
                 except:
                     pass
-
-        colmax = np.argmax(corrmat,axis=0)
-        for i in enumerate(colmax):
-            axtrack = i[0]*len(Xs)
-            axs[axtrack + i[1]].set_title('Pearsons correlation: %.3f' % corrmat[i[1]][i[0]],color = 'darkred',fontsize = 18)
-
-        #     axs[i[1]][i[0]].set_title('Pearsons correlation: %.3f' % corrmat[i[1]][i[0]],color = 'darkred',fontsize = 18)
 
         fig.tight_layout()
 
