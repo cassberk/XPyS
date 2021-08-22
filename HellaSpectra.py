@@ -700,7 +700,7 @@ class HellaSpectra:
             item.set_fontsize(18)
 
 
-    def be_corr(self,par,plotflag = True):
+    def be_corr(self,pars,plotflag = True):
         """
         Find and plot correlation of a parameter against the Binding Energies for all the spectra
 
@@ -712,32 +712,45 @@ class HellaSpectra:
         plotflag: bool
             Option to plot. Default = True
         """
-        print(' '.join(self.info))
-        spec_and_params = self.spectra.join(self.params,how = 'inner')
-        pmax = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].max()
-        emax = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].idxmax()
-        print('maximum correlation of',np.round(pmax,3),'at',np.round(emax,2))
-        
-        if plotflag:
-            fig,axs = plt.subplots(1,2,figsize = (12,4))
-            axs[0].plot(self.energy,spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].values)
-            axs[0].plot(emax,pmax,'x',marker = 'x',markersize = 15,mew = 5,color = 'black')
-            axs[0].set_ylabel('p-value',fontsize = 14)
-            axs[0].set_xlabel('B.E. (eV)',fontsize = 14)
-            axs[0].set_title(par,fontsize = 14)
+        if not type(pars) is list:
+            raise TypeError('par argument must be a list')
 
-            t = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].values
-            sc = axs[1].scatter(self.energy,self.spectra.values.mean(axis=0),c=t,cmap=cm.bwr, vmin=-1, vmax=1, s=100)
-            specmax_idx = index_of(self.energy,emax)
-            axs[1].plot(emax,self.spectra.values.mean(axis=0)[specmax_idx],marker = 'x',markersize = 15,mew = 5,color = 'black')
-            axs[1].set_ylabel('Counts/sec',fontsize = 14)
-            axs[1].set_xlabel('B.E. (eV)',fontsize = 14)
-            fig.colorbar(sc,ax=axs[1])
+
+        # print(' '.join(self.info))
+        spec_and_params = self.spectra.join(self.params,how = 'inner')
+        BEcorrs = {}
+        for par in pars:
+            print(par)
+            BEcorrs[par] = {}
+            BEcorrs[par]['pmax'] = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].max()
+            BEcorrs[par]['emax'] = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].idxmax()
+            # print('maximum correlation of',np.round(pmax,3),'at',np.round(emax,2))
+        # return BEcorrs        
+        if plotflag:
+            fig,axs = plt.subplots(len(BEcorrs.keys()),2,figsize = (12,4*len(BEcorrs.keys())))
+            axs = axs.ravel()
+
+            axi = 0
+            for par in BEcorrs.keys():
+
+                axs[axi].plot(self.energy,spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].values)
+                axs[axi].plot(BEcorrs[par]['emax'],BEcorrs[par]['pmax'],'x',marker = 'x',markersize = 15,mew = 5,color = 'black')
+                axs[axi].set_ylabel('p-value',fontsize = 14)
+                axs[axi].set_xlabel('B.E. (eV)',fontsize = 14)
+                axs[axi].set_title(par,fontsize = 14)
+                axi += 1
+
+                t = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].values
+                sc = axs[axi].scatter(self.energy,self.spectra.values.mean(axis=0),cmap=cm.bwr, vmin=-1, vmax=1, s=100)
+                specmax_idx = index_of(self.energy,BEcorrs[par]['emax'])
+                axs[axi].plot(BEcorrs[par]['emax'],self.spectra.values.mean(axis=0)[specmax_idx],marker = 'x',markersize = 15,mew = 5,color = 'black')
+                axs[axi].set_ylabel('Counts/sec',fontsize = 14)
+                axs[axi].set_xlabel('B.E. (eV)',fontsize = 14)
+                fig.colorbar(sc,ax=axs[axi])
+                axi += 1
             fig.tight_layout()
 
-            return pmax,emax,fig,axs
-        else:
-            return pmax,emax
+        return BEcorrs
 
     def par_corr(self,Xs,Ys):
         """
