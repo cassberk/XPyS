@@ -660,7 +660,7 @@ class HellaSpectra:
 
         fig.tight_layout()
 
-    def nmf(self,n_comps = 3,nmf_kws = None):
+    def nmf(self,n_comps = 3,**kws):
         """
         Find Non-Negative Matrix Factorization of spectra
 
@@ -672,31 +672,28 @@ class HellaSpectra:
         nmf_kws: dict
             keywords to pass to sklearn.decomposition.NMF
         """
-        if np.any(self.spectra < 0):
-            self.spectra[np.where(self.spectra < 0)] = 0
+        if np.any(self.spectra.values < 0):
+            self.spectra.values[np.where(self.spectra.values < 0)] = 0
 
-        if nmf_kws is None:
-            nmf_kws = {}
 
         # Calculate NMF
-        model = NMF(n_components=n_comps, random_state=0, **nmf_kws)
+        model = NMF(n_components=n_comps, random_state=0, **kws)
 
         W = model.fit_transform(self.spectra)
-        H = model.components_
+        self.H = model.components_
 
         if self.info != []:
             print(' '.join(self.info))
 
-
         nmf_comps = ['nmf_{}'.format(i) for i in range(1,n_comps+1)]
-        for nmfc in enumerate(nmf_comps):
-            self.df[nmfc[1]] = pd.Series(W[:,nmfc[0]], index = self.df.index)
 
+        nmf = {nmf_comps[i] : W[:,i] for i in range(len(nmf_comps))}
+        self.W = pd.DataFrame(nmf,index = self.spectra.index)
 
         fig,ax = plt.subplots()
 
         for i in range(n_comps):
-            ax.plot(H[i,:])
+            ax.plot(self.H[i,:])
 
         ax.legend(nmf_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
