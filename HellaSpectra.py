@@ -713,7 +713,7 @@ class HellaSpectra:
             Option to plot. Default = True
         """
         if not type(pars) is list:
-            raise TypeError('par argument must be a list')
+            raise TypeError('pars argument must be a list')
 
 
         # print(' '.join(self.info))
@@ -764,28 +764,37 @@ class HellaSpectra:
         Ys: list 
             list of parameter names on y-axes
         """
+        fulldf = self.spectra.join(self.params,how = 'inner')
+        if hasattr(self,'pc'):
+            fulldf = fulldf.join(self.pc,how = 'inner')
+        if hasattr(self,'W'):
+            fulldf = fulldf.join(self.W,how = 'inner')
+
         fig, axs = plt.subplots(len(Ys),len(Xs),figsize = (4*len(Xs),4*len(Ys)))
+        axs = axs.ravel()
+
         ylabels = []
         corrmat = np.empty([len(Ys),len(Xs)])
-        ax = 0
+        a = 0
         for i in range(len(Ys)):
             j =0
 
             if type(Ys[i]) == float:
-                axs[i][j].set_ylabel(np.round(Ys[i],2),fontsize = 26)
+                axs[a].set_ylabel(np.round(Ys[i],2),fontsize = 26)
             else:
-                axs[i][j].set_ylabel(Ys[i],fontsize = 26)
+                axs[a].set_ylabel(Ys[i],fontsize = 26)
 
             for j in range(len(Xs)):
 
                 try:
-                    axs[i][j].plot(self.df[Xs[j]].values,self.df[Ys[i]].values,'o')
-                    corrmat[i][j], _ = pearsonr(self.df[Xs[j]].values, self.df[Ys[i]].values) 
+                    axs[a].plot(fulldf[Xs[j]].values,fulldf[Ys[i]].values,'o')
+                    corrmat[i][j], _ = pearsonr(fulldf[Xs[j]].values, fulldf[Ys[i]].values) 
 
-                    axs[i][j].set_title('Pearsons correlation: %.3f' % corrmat[i][j],fontsize = 18)
-                    axs[i][j].set_xlabel(Xs[j],fontsize = 26)
-                    axs[i][j].set_xticklabels('')
-                    axs[i][j].set_yticklabels('')
+                    axs[a].set_title('Pearsons correlation: %.3f' % corrmat[i][j],fontsize = 18)
+                    axs[a].set_xlabel(Xs[j],fontsize = 26)
+                    axs[a].set_xticklabels('')
+                    axs[a].set_yticklabels('')
+                    a+=1
 
 
                 except:
@@ -793,11 +802,14 @@ class HellaSpectra:
 
         colmax = np.argmax(corrmat,axis=0)
         for i in enumerate(colmax):
-            axs[i[1]][i[0]].set_title('Pearsons correlation: %.3f' % corrmat[i[1]][i[0]],color = 'darkred',fontsize = 18)
+            axtrack = i[0]*len(Xs)
+            axs[axtrack + i[1]].set_title('Pearsons correlation: %.3f' % corrmat[i[1]][i[0]],color = 'darkred',fontsize = 18)
+
+        #     axs[i[1]][i[0]].set_title('Pearsons correlation: %.3f' % corrmat[i[1]][i[0]],color = 'darkred',fontsize = 18)
 
         fig.tight_layout()
 
-        return fig, axs
+        return fig, axs,fulldf, corrmat
 
     def find_linautofit(self,Xs,Ys,plotflag = True):
         """
