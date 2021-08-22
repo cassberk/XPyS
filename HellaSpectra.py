@@ -531,9 +531,6 @@ class HellaSpectra:
         pc = {prin_comps[i] : X_tr[:,i] for i in range(len(prin_comps))}
         self.pc = pd.DataFrame(pc,index = self.spectra.index)
         self.pc_vec = X_r.components_
-        # for pc in enumerate(prin_comps):
-        #     self.df[pc[1]] = pd.Series(X_tr[:,pc[0]], index = self.spectra.index)
-
 
         fig,ax = plt.subplots()
 
