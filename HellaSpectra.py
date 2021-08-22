@@ -526,9 +526,9 @@ class HellaSpectra:
         print('cumulative variance: %s'
             % str(np.cumsum(pca.explained_variance_ratio_ *100) ) ) 
 
-        prin_comps = ['P{}'.format(i) for i in range(1,n_comps+1)]
+        self.prin_comps = ['P{}'.format(i) for i in range(1,n_comps+1)]
         # Build Dictionary of principal components
-        pc = {prin_comps[i] : X_tr[:,i] for i in range(len(prin_comps))}
+        pc = {self.prin_comps[i] : X_tr[:,i] for i in range(len(self.prin_comps))}
         self.pc = pd.DataFrame(pc,index = self.spectra.index)
         self.pc_vec = X_r.components_
 
@@ -537,7 +537,7 @@ class HellaSpectra:
         for i in range(n_comps):
             ax.plot(self.pc_vec[i,:])
             
-        ax.legend(prin_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+        ax.legend(self.prin_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
         ax.set_title('Raw Data',fontsize = 18)
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
@@ -682,9 +682,9 @@ class HellaSpectra:
         if self.info != []:
             print(' '.join(self.info))
 
-        nmf_comps = ['nmf_{}'.format(i) for i in range(1,n_comps+1)]
+        self.nmf_comps = ['nmf_{}'.format(i) for i in range(1,n_comps+1)]
 
-        nmf = {nmf_comps[i] : W[:,i] for i in range(len(nmf_comps))}
+        nmf = {self.nmf_comps[i] : W[:,i] for i in range(len(self.nmf_comps))}
         self.W = pd.DataFrame(nmf,index = self.spectra.index)
 
         fig,ax = plt.subplots()
@@ -692,7 +692,7 @@ class HellaSpectra:
         for i in range(n_comps):
             ax.plot(self.H[i,:])
 
-        ax.legend(nmf_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+        ax.legend(self.nmf_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
         ax.set_title('Raw Data',fontsize = 18)
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
