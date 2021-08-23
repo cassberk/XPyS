@@ -500,17 +500,17 @@ class HellaSpectra:
     
         return spec_train, randpar
 
-    def pca(self,n_comps = 3):
+    def pca(self,n_pca = 3):
         """
         Perform Principal Component Analysis on the spectra and plot the principal components
 
         Parameters
         ----------
-        n_comps: int
+        n_pca: int
             number of principal components to evaluate
         """
-
-        pca = PCA(n_components=n_comps)
+        self.n_pca = n_pca
+        pca = PCA(n_components=self.n_pca)
 
         # PCA of raw signal
         X_r = pca.fit(self.spectra.values)
@@ -524,7 +524,7 @@ class HellaSpectra:
         print('cumulative variance: %s'
             % str(np.cumsum(pca.explained_variance_ratio_ *100) ) ) 
 
-        self.pc_names = ['pc{}'.format(i) for i in range(1,n_comps+1)]
+        self.pc_names = ['pc{}'.format(i) for i in range(1,self.n_pca+1)]
         # Build Dictionary of principal components
         pc = {self.pc_names[i] : X_tr[:,i] for i in range(len(self.pc_names))}
         self.pc = pd.DataFrame(pc,index = self.spectra.index)
@@ -532,7 +532,7 @@ class HellaSpectra:
 
         fig,ax = plt.subplots()
 
-        for i in range(n_comps):
+        for i in range(self.n_pca):
             ax.plot(self.pc_vec[i,:])
             
         ax.legend(self.pc_names,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
@@ -655,24 +655,25 @@ class HellaSpectra:
 
         fig.tight_layout()
 
-    def nmf(self,n_comps = 3,**kws):
+    def nmf(self,n_nmf = 3,**kws):
         """
         Find Non-Negative Matrix Factorization of spectra
 
         Parameters
         ----------
-        n_comps: int
+        n_nmf: int
             number of non-negative matrix components
         
         nmf_kws: dict
             keywords to pass to sklearn.decomposition.NMF
         """
+        self.n_nmf = n_nmf
         if np.any(self.spectra.values < 0):
             self.spectra.values[np.where(self.spectra.values < 0)] = 0
 
 
         # Calculate NMF
-        model = NMF(n_components=n_comps, random_state=0, **kws)
+        model = NMF(n_components=self.n_nmf, random_state=0, **kws)
 
         W = model.fit_transform(self.spectra)
         self.H = model.components_
@@ -680,14 +681,17 @@ class HellaSpectra:
         if self.info != []:
             print(' '.join(self.info))
 
-        self.nmf_names = ['nmf{}'.format(i) for i in range(1,n_comps+1)]
+        self.nmf_names = ['nmf{}'.format(i) for i in range(1,self.n_nmf+1)]
 
         nmf = {self.nmf_names[i] : W[:,i] for i in range(len(self.nmf_names))}
         self.W = pd.DataFrame(nmf,index = self.spectra.index)
 
+        self._plotnmfvecs()
+
+    def _plotnmfvecs(self):
         fig,ax = plt.subplots()
 
-        for i in range(n_comps):
+        for i in range(self.n_nmf):
             ax.plot(self.H[i,:])
 
         ax.legend(self.nmf_names,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
