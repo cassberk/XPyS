@@ -741,7 +741,7 @@ class HellaSpectra:
                 axi += 1
 
                 t = spec_and_params.corr()[par].iloc[0:self.spectra.values.shape[1]].values
-                sc = axs[axi].scatter(self.energy,self.spectra.values.mean(axis=0),cmap=cm.bwr, vmin=-1, vmax=1, s=100)
+                sc = axs[axi].scatter(self.energy,self.spectra.values.mean(axis=0),c = t, cmap=cm.bwr, vmin=-1, vmax=1, s=100)
                 specmax_idx = index_of(self.energy,BEcorrs[par]['emax'])
                 axs[axi].plot(BEcorrs[par]['emax'],self.spectra.values.mean(axis=0)[specmax_idx],marker = 'x',markersize = 15,mew = 5,color = 'black')
                 axs[axi].set_ylabel('Counts/sec',fontsize = 14)
