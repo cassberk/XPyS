@@ -418,11 +418,11 @@ class HellaSpectra:
         color = ['grey','red','blue','green']
         center_stats = {}
         for par in enumerate(pars):
-            bin_heights, bin_borders, _ = ax.hist(self.df_params[par[1]].values, bins='auto', label='histogram',color=color[par[0]])
+            bin_heights, bin_borders, _ = ax.hist(self.params[par[1]].values, bins='auto', label='histogram',color=color[par[0]])
             
             try:
                 bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-                center_stats[par[1]], _ = curve_fit(gaussian, bin_centers, bin_heights, p0=[self.df_params[par[1]].values.mean(), 40, 0.5])
+                center_stats[par[1]], _ = curve_fit(gaussian, bin_centers, bin_heights, p0=[self.params[par[1]].values.mean(), 40, 0.5])
 
                 x_interval_for_fit = np.linspace(bin_borders[0]-1, bin_borders[-1]+1, 10000)
                 ax.plot(x_interval_for_fit, gaussian(x_interval_for_fit, *center_stats[par[1]]), label='fit',color=color[par[0]])
@@ -500,6 +500,10 @@ class HellaSpectra:
     
         return spec_train, randpar
 
+
+
+    # Dimensionality Reduction
+
     def pca(self,n_pca = 3):
         """
         Perform Principal Component Analysis on the spectra and plot the principal components
@@ -529,7 +533,9 @@ class HellaSpectra:
         pc = {self.pc_names[i] : X_tr[:,i] for i in range(len(self.pc_names))}
         self.pc = pd.DataFrame(pc,index = self.spectra.index)
         self.pc_vec = X_r.components_
+        self._plotpcavecs()
 
+    def _plotpcavecs(self):
         fig,ax = plt.subplots()
 
         for i in range(self.n_pca):
