@@ -524,9 +524,9 @@ class HellaSpectra:
         print('cumulative variance: %s'
             % str(np.cumsum(pca.explained_variance_ratio_ *100) ) ) 
 
-        self.prin_comps = ['P{}'.format(i) for i in range(1,n_comps+1)]
+        self.pc_names = ['pc{}'.format(i) for i in range(1,n_comps+1)]
         # Build Dictionary of principal components
-        pc = {self.prin_comps[i] : X_tr[:,i] for i in range(len(self.prin_comps))}
+        pc = {self.pc_names[i] : X_tr[:,i] for i in range(len(self.pc_names))}
         self.pc = pd.DataFrame(pc,index = self.spectra.index)
         self.pc_vec = X_r.components_
 
@@ -535,7 +535,7 @@ class HellaSpectra:
         for i in range(n_comps):
             ax.plot(self.pc_vec[i,:])
             
-        ax.legend(self.prin_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+        ax.legend(self.pc_names,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
         ax.set_title('Raw Data',fontsize = 18)
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
@@ -597,7 +597,7 @@ class HellaSpectra:
         fig.tight_layout()
 
 
-    def plotpca3D(self,X='P1', Y='P2', Z='P3', label = 'samples'):
+    def plotpca3D(self,X='pc1', Y='pc2', Z='pc3'):
         """
         Plot 3d scatter plot of principal components
 
@@ -613,7 +613,7 @@ class HellaSpectra:
             principal component to plot on z-axis, Default 'P3'
         """
 
-        fig = plt.figure(figsize = (12,4))
+        fig = plt.figure(figsize = (12,5))
         ax1 = fig.add_subplot(1, 2, 1, projection='3d')
         ax2 = fig.add_subplot(1, 2, 2, projection='3d')
 
@@ -680,9 +680,9 @@ class HellaSpectra:
         if self.info != []:
             print(' '.join(self.info))
 
-        self.nmf_comps = ['nmf_{}'.format(i) for i in range(1,n_comps+1)]
+        self.nmf_names = ['nmf{}'.format(i) for i in range(1,n_comps+1)]
 
-        nmf = {self.nmf_comps[i] : W[:,i] for i in range(len(self.nmf_comps))}
+        nmf = {self.nmf_names[i] : W[:,i] for i in range(len(self.nmf_names))}
         self.W = pd.DataFrame(nmf,index = self.spectra.index)
 
         fig,ax = plt.subplots()
@@ -690,7 +690,7 @@ class HellaSpectra:
         for i in range(n_comps):
             ax.plot(self.H[i,:])
 
-        ax.legend(self.nmf_comps,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
+        ax.legend(self.nmf_names,bbox_to_anchor=(1.05, 1), loc='upper left',fontsize = 18)
 
         ax.set_title('Raw Data',fontsize = 18)
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
