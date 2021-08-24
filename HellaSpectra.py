@@ -548,26 +548,31 @@ class HellaSpectra:
                     ax.get_xticklabels() + ax.get_yticklabels()):
             item.set_fontsize(18)
 
+    def plotpca(self,x = 'pc1',y = 'pc2',z=None):
+        if z is None:
+            self._plot_dimred_2D(x,y,self.pc)
+        else:
+            self._plot_dimred_3D(x,y,z,self.pc)
 
-    def plotpca2D(self,x,y):
+    def _plot_dimred_2D(self,x,y,df):
         """
         Plot 2d scatter plot of principal components
 
         Parameters
         ----------
-        x: str 'P1','P2',...etc
-            principal component to plot on x-axis
+        x: str 'pc1','pc2','nmf1','nmf2',...etc
+            dimensionality reduction component to plot on x-axis
 
-        y: str 'P1','P2',...etc
-            principal component to plot on y-axis
+        y: str 'pc1','pc2','nmf1','nmf2',...etc
+            dimensionality reduction component to plot on y-axis
 
         """
 
         fig,(ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
 
-        sample_names = list(self.pc.index.levels[1])
+        sample_names = list(df.index.levels[1])
         n_samples=len(sample_names)
-        n_targets = len(self.pc.index.levels[0])
+        n_targets = len(df.index.levels[0])
 
         colormap = plt.cm.nipy_spectral
         colors = [colormap(i) for i in np.linspace(0, 1,n_samples)]
@@ -577,14 +582,18 @@ class HellaSpectra:
 
         # First plot the principal components color coded by sample
         for sample in sample_names:
-            ax1.plot(self.pc.xs(sample,level = 'name')[x].values,self.pc.xs(sample,level = 'name')[y].values,'o',markersize = 10)
+            ax1.plot(df.xs(sample,level = 'name')[x].values,df.xs(sample,level = 'name')[y].values,'o',markersize = 10)
         
         # Next plot the principal components color coded by target
-        for target in self.pc.index.levels[0]:  # Level 0 is the target level
-            ax2.plot(self.pc.xs(target,level = 'target')[x].values,self.pc.xs(target,level = 'target')[y].values,'o',markersize = 10)
+        for target in df.index.levels[0]:  # Level 0 is the target level
+            ax2.plot(df.xs(target,level = 'target')[x].values,df.xs(target,level = 'target')[y].values,'o',markersize = 10)
 
+        if 'pc' in x:
+            title = 'principal Components'
+        elif 'nmf' in x:
+            title = 'Non-Negative Matrix Factorization'
         for ax in [ax1, ax2]:
-            ax.set_title('Principal Components')
+            ax.set_title(title)
             ax.set_xlabel(x)
             ax.set_ylabel(y)
             ax.tick_params('x',labelrotation=80)
@@ -596,14 +605,14 @@ class HellaSpectra:
         ax1.legend(list(self.spectra_objects.keys()),bbox_to_anchor=(1.05, 1.2), loc='upper left',fontsize = 18)
 
         leg_patches = []
-        for tar in enumerate(self.pc.index.levels[0]):
+        for tar in enumerate(df.index.levels[0]):
             leg_patches.append(mpatches.Patch(color=colors_targets[tar[0]], label=tar[1]))
 
         ax2.legend(handles=leg_patches,bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
         fig.tight_layout()
 
 
-    def plotpca3D(self,X='pc1', Y='pc2', Z='pc3'):
+    def _plot_dimred_3D(self,X, Y, Z, df):
         """
         Plot 3d scatter plot of principal components
 
@@ -623,9 +632,9 @@ class HellaSpectra:
         ax1 = fig.add_subplot(1, 2, 1, projection='3d')
         ax2 = fig.add_subplot(1, 2, 2, projection='3d')
 
-        sample_names = list(self.pc.index.levels[1])
+        sample_names = list(df.index.levels[1])
         n_samples=len(sample_names)
-        n_targets = len(self.pc.index.levels[0])
+        n_targets = len(df.index.levels[0])
 
         colormap = plt.cm.nipy_spectral
         colors = [colormap(i) for i in np.linspace(0, 1,n_samples)]
@@ -642,11 +651,11 @@ class HellaSpectra:
 
         # First plot the principal components color coded by sample
         for sample in sample_names:
-            ax1.plot(self.pc.xs(sample,level = 'name')[X].values,self.pc.xs(sample,level = 'name')[Y].values,self.pc.xs(sample,level = 'name')[Z].values,'o',markersize = 10)
+            ax1.plot(df.xs(sample,level = 'name')[X].values,df.xs(sample,level = 'name')[Y].values,df.xs(sample,level = 'name')[Z].values,'o',markersize = 10)
 
         # Next plot the principal components color coded by target
-        for target in self.pc.index.levels[0]:  # Level 0 is the target level
-            ax2.plot(self.pc.xs(target,level = 'target')[X].values,self.pc.xs(target,level = 'target')[Y].values,self.pc.xs(target,level = 'target')[Z].values,'o',markersize = 10)
+        for target in df.index.levels[0]:  # Level 0 is the target level
+            ax2.plot(df.xs(target,level = 'target')[X].values,df.xs(target,level = 'target')[Y].values,df.xs(target,level = 'target')[Z].values,'o',markersize = 10)
         
         for ax in [ax1,ax2]:
             ax.set_xlabel(X,fontsize = 16)
@@ -706,6 +715,13 @@ class HellaSpectra:
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
                     ax.get_xticklabels() + ax.get_yticklabels()):
             item.set_fontsize(18)
+
+    def plotnmf(self,x = 'nmf1',y = 'nmf2',z=None):
+        if z is None:
+            self._plot_dimred_2D(x,y,self.W)
+        else:
+            self._plot_dimred_3D(x,y,z,self.W)
+
 
 
     def be_corr(self,pars,plotflag = True):
