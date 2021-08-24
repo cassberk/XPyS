@@ -17,7 +17,7 @@ import XPyS
 from XPyS import bkgrds as backsub
 from .helper_functions import index_of, guess_from_data
 
-from XPyS.gui_element_dicts import *
+import XPyS.gui_element_dicts
 import XPyS.config as cfg
 import XPyS.VAMAS
 import XPyS.autofit
@@ -411,21 +411,29 @@ class HellaSpectra:
 
         def gaussian(x, mean, amplitude, standard_deviation):
             return amplitude * np.exp( - (x - mean)**2 / (2*standard_deviation ** 2))
-
+        
         fig,ax = plt.subplots(figsize = (12,8))
 
+        prefix = ['_'.join(p.split('_')[:-1])+'_' for p in pars]
 
-        color = ['grey','red','blue','green']
+        # If the prefix is stored in gui_element_dicts use that color, otherwise create colors
+        if all(elem in list(XPyS.gui_element_dicts.element_color.keys())  for elem in prefix):
+            colors = [XPyS.gui_element_dicts.element_color[prefix[i]] for i in range(len(pars))]
+        else:
+            colormap = plt.cm.nipy_spectral
+            colors = [colormap(i) for i in np.linspace(0, 1,len(pars))]
+            ax.set_prop_cycle('color', colors)
+
         center_stats = {}
         for par in enumerate(pars):
-            bin_heights, bin_borders, _ = ax.hist(self.params[par[1]].values, bins='auto', label='histogram',color=color[par[0]])
+            bin_heights, bin_borders, _ = ax.hist(self.params[par[1]].values, bins='auto', label='histogram',color=colors[par[0]])
             
             try:
                 bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
                 center_stats[par[1]], _ = curve_fit(gaussian, bin_centers, bin_heights, p0=[self.params[par[1]].values.mean(), 40, 0.5])
 
                 x_interval_for_fit = np.linspace(bin_borders[0]-1, bin_borders[-1]+1, 10000)
-                ax.plot(x_interval_for_fit, gaussian(x_interval_for_fit, *center_stats[par[1]]), label='fit',color=color[par[0]])
+                ax.plot(x_interval_for_fit, gaussian(x_interval_for_fit, *center_stats[par[1]]), label='fit',color=colors[par[0]])
             except:
                 print('Gaussian not good for ',par)
             
@@ -435,12 +443,13 @@ class HellaSpectra:
             
         ax.legend(pars,fontsize = '16')
 
+        leg_patches = []
+        for p in enumerate(pars):
+            leg_patches.append(mpatches.Patch(color=colors[p[0]], label=p[1]))
+
+        ax.legend(handles=leg_patches,bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
         return fig, ax
 
-        # red_patch = mpatches.Patch(color='red', label=self.targetname)
-        # blue_patch = mpatches.Patch(color='blue', label='No '+self.targetname)
-
-        # ax.legend(handles=[blue_patch,red_patch],bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
     ## Using dictionary
 
     def make_spectra(self,spectra_model,number):
@@ -774,7 +783,7 @@ class HellaSpectra:
 
             return fig, axs
 
-    def par_corr(self,Xs,Ys):
+    def scattercorr(self,Xs,Ys):
         """
         Plots the correllation scatter plots and finds the pearson p-number between the given parameters.
 
@@ -824,7 +833,7 @@ class HellaSpectra:
 
         fig.tight_layout()
 
-        return fig, axs,fulldf, corrmat
+        return fig, axs
 
     def find_linautofit(self,Xs,Ys,plotflag = True):
         """
