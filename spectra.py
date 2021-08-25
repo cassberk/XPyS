@@ -314,12 +314,14 @@ class spectra:
         return data_pred - data            
             
     def get_autofit_model(self):
+        """imports the AutoInit object from the autoinit module from the correct orbital folder in the saved_models folder"""
         module = importlib.import_module('XPyS.saved_models.'+self.orbital+'.autoinit')
         autoinit_class = getattr(module, 'AutoInit')
         autoinit_instance = autoinit_class()
         self.autofit =  autoinit_instance
 
     def update_autofit_params(self,energy,intensity):
+        """update the spectra.params object from the autofit.params"""
         self.autofit.guess_params(energy,intensity)
 
         for par in self.autofit.params.keys():
