@@ -279,17 +279,11 @@ class spectra:
             if autofit:
                 # Load the autofit class out of the saved_model folder if it is not already loaded
                 if not hasattr(self,'autofit'):
-                    autoinit_module_name = 'XPyS.saved_models.'+self.orbital+'.autoinit'
-                    autoinit_module = importlib.import_module(autoinit_module_name)
-                    self.autofit = autoinit_module.AutoInit()
-                    # self.autofit = XPyS.autofit.autofit(self.esub,self.isub[i],self.orbital)
-                    # self.autofit = self.get_autofit_model()
 
-                self.autofit.guess_params(self.isub[i],self.esub)
+                    self.get_autofit_model()
 
-                for par in self.autofit.guess_pars.keys():
-                    self.params[par].value = self.autofit.guess_pars[par]
-                    # self.par_guess_track[par].append(self.autofit.guess_pars[par])
+                self.update_autofit_params(self,esub,self.isub[i])
+
             self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
             # Try using minimuzer class to make the funtion more flexible
@@ -323,8 +317,14 @@ class spectra:
         module = importlib.import_module('XPyS.saved_models.'+self.orbital+'.autoinit')
         autoinit_class = getattr(module, 'AutoInit')
         autoinit_instance = autoinit_class()
-        return autoinit_instance
-            
+        self.autofit =  autoinit_instance
+
+    def update_autofit_params(self,energy,intensity):
+        self.autofit.guess_params(energy,intensity)
+
+        for par in self.autofit.params.keys():
+            self.params[par].value = self.autofit.params[par]
+
     def plot_fitresults(self,specific_points = None, plot_with_background_sub = False,ref_lines = False,colors = None,infig = None, inaxs = None, offset = 0):
         """Function to plot the fit results
 
