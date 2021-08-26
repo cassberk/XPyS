@@ -15,7 +15,7 @@ import XPyS.config as cfg
 from XPyS import bkgrds as backsub
 from .helper_functions import index_of, guess_from_data
 
-from XPyS.gui_element_dicts import *
+# from XPyS.gui_element_dicts import *
 
 import XPyS.VAMAS
 import os
@@ -240,7 +240,7 @@ class CompoundSpectra:
 
 
         if colors is None:
-            hue = element_color
+            hue = cfg.element_color
         else:
             hue = colors
 
@@ -272,7 +272,7 @@ class CompoundSpectra:
                 axs[i].plot(spectra.esub, spectra.mod.eval(self.fit_results[scan_num].params, x =spectra.esub) + offset)
 
                 p = [[] for i in range(len(spectra.pairlist))]
-                fit_legend = [element_text[element[0]] for element in spectra.pairlist]
+                fit_legend = [cfg.element_text[element[0]] for element in spectra.pairlist]
 
                 for pairs in enumerate(spectra.pairlist):
 
@@ -289,7 +289,7 @@ class CompoundSpectra:
                                                     color = hue[pairs[1][0]], alpha=0.3)
 
                     if ref_lines == True:
-                        axs[i].axvline(x = element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
+                        axs[i].axvline(x = cfg.element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
 
                 axs[i].set_xlabel('Binding Energy (eV)',fontsize=30)
                 axs[i].set_xlim(np.max(spectra.esub),np.min(spectra.esub))

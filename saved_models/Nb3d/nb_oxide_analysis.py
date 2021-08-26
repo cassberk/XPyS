@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy as dc
 import lmfit as lm
-from XPyS.gui_element_dicts import *
-
+import XPyS
+import XPyS.config as cfg
 """
 Series of funcitons for analyzing thicknesses of the different oxides for NbOxides
 """
@@ -165,7 +165,7 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
     """Plot the calculated thicknesses"""
     if plotflag:
         if colors is None:
-            hue = element_color
+            hue = cfg.element_color
         else:
             hue = colors
         width = 0.8
@@ -173,7 +173,7 @@ def calc_oxide_thickness(sample,oxides=None,substrate=None,S_oxide=None,S_substr
 
         p = [[] for i in range(len(oxides))]
 
-        fit_legend = [element_text[element] for element in oxides]
+        fit_legend = [cfg.element_text[element] for element in oxides]
 
         comps_so_far = []
         for ox in enumerate(oxides):

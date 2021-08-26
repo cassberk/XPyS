@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy as dc
-from XPyS.gui_element_dicts import *
+import XPyS
+import XPyS.config as cfg
 
 def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiOx4_32_'],substrate='Si_32_',\
     S_oxide=1,S_substrate=1,EAL=2.84,specific_points = None,SFactors = None, plotflag = True):
@@ -70,7 +71,7 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
 
         p = [[] for i in range(len(oxides))]
 
-        fit_legend = [element_text[element] for element in oxides]
+        fit_legend = [cfg.element_text[element] for element in oxides]
 
         comps_so_far = []
         for ox in enumerate(oxides):
@@ -78,7 +79,7 @@ def calc_oxide_thickness(sample,oxides=['SiOx1_32_','SiOx2_32_','SiOx3_32_','SiO
             bottom_iter = sum([sample.oxide_thickness[i] for i in comps_so_far])
 
             p[ox[0]] = ax.bar(pts,sample.oxide_thickness[ox[1]],width, bottom = bottom_iter, \
-                            color = element_color[ox[1]])
+                            color = cfg.element_color[ox[1]])
 
 
             comps_so_far.append(ox[1])

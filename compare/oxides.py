@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from XPyS.gui_element_dicts import *
+import XPyS
+import XPyS.config as cfg
 # from embed import shell()
 
 def plot_oxides(sample_spectra,set_idx = None, error = 'std', specify_names = None, width = 0.8,capsize = 20):
@@ -86,13 +87,13 @@ def plot_oxides(sample_spectra,set_idx = None, error = 'std', specify_names = No
                 fit_legend.append(ox)
                 p.append(ax.bar(ind[i],sample_dic_mean[axis_names[i]][ox], width[i], yerr=sample_dic_err[axis_names[i]][ox],\
                               error_kw=dict(lw=5, capsize=20, capthick=3), bottom = bottom_iter,\
-                          color = element_color[ox]))
+                          color = cfg.element_color[ox]))
                 plot_iter+=1
 
             else:
                 ax.bar(ind[i],sample_dic_mean[axis_names[i]][ox], width[i], yerr=sample_dic_err[axis_names[i]][ox],\
                               error_kw=dict(lw=5, capsize=20, capthick=3), bottom = bottom_iter,\
-                          color = element_color[ox])
+                          color = cfg.element_color[ox])
 
 
             comps_so_far.append(np.asarray([sample_dic_mean[axis_names[i]][ox]]))
@@ -105,7 +106,7 @@ def plot_oxides(sample_spectra,set_idx = None, error = 'std', specify_names = No
     # ax.set_xscale('log')
 
 
-    plt.legend(p,[element_text[oxides] for oxides in fit_legend],bbox_to_anchor=(1.0, 0.4, 0.0, 0.5),fontsize=30)
+    plt.legend(p,[cfg.element_text[oxides] for oxides in fit_legend],bbox_to_anchor=(1.0, 0.4, 0.0, 0.5),fontsize=30)
     # plt.grid() 
     # return color_list, oxplotlist
     return fig, ax

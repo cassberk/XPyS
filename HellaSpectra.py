@@ -17,7 +17,7 @@ import XPyS
 from XPyS import bkgrds as backsub
 from .helper_functions import index_of, guess_from_data
 
-import XPyS.gui_element_dicts
+# import XPyS.gui_element_dicts
 import XPyS.config as cfg
 import XPyS.VAMAS
 import os
@@ -421,8 +421,8 @@ class HellaSpectra:
         prefix = ['_'.join(p.split('_')[:-1])+'_' for p in pars]
 
         # If the prefix is stored in gui_element_dicts use that color, otherwise create colors
-        if all(elem in list(XPyS.gui_element_dicts.element_color.keys())  for elem in prefix):
-            colors = [XPyS.gui_element_dicts.element_color[prefix[i]] for i in range(len(pars))]
+        if all(elem in list(XPyS.gui_element_dicts.cfg.element_color.keys())  for elem in prefix):
+            colors = [XPyS.gui_element_dicts.cfg.element_color[prefix[i]] for i in range(len(pars))]
         else:
             colormap = plt.cm.nipy_spectral
             colors = [colormap(i) for i in np.linspace(0, 1,len(pars))]

@@ -4,6 +4,8 @@ import sys
 import os
 sys.path.append(package_location)
 import XPyS
+import XPyS.configuration
+import XPyS.configuration.gui_element_dicts
 import pandas as pd
 
 datarepo = {
@@ -31,8 +33,12 @@ bkgrd_subtraction = {
     'Al2p': [(71, 79), 'shirley'],
     'Valence': [(0, 0), 'shirley'],
     'XPS': [(0, 0), 'shirley'],
-    'Survey': [(0, 0), 'shirley']
+    'Survey': [(0, 0), 'shirley'],
     }
+
+element_text = XPyS.configuration.gui_element_dicts.element_text
+element_color = XPyS.configuration.gui_element_dicts.element_color
+element_refpos = XPyS.configuration.gui_element_dicts.element_refpos
 
 
 def spectra_colors():

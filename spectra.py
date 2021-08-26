@@ -22,7 +22,7 @@ import XPyS.models
 import XPyS.bkgrds as backsub
 from .helper_functions import index_of, guess_from_data
 
-from XPyS.gui_element_dicts import *
+# from XPyS.gui_element_dicts import *
 
 import XPyS.VAMAS
 import os
@@ -359,7 +359,7 @@ class spectra:
         """         
 
         if colors is None:
-            hue = element_color
+            hue = cfg.element_color
         else:
             hue = colors
 
@@ -389,7 +389,7 @@ class spectra:
             # for i in self.fit_results_idx:
 
                 p = [[] for i in range(len(self.pairlist))]
-                fit_legend = [element_text[element[0]] for element in self.pairlist]
+                fit_legend = [cfg.element_text[element[0]] for element in self.pairlist]
 
                     
                 print('Plotting fit_results')
@@ -425,7 +425,7 @@ class spectra:
 
 
                     if ref_lines == True:
-                        axs.axvline(x = element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
+                        axs.axvline(x = cfg.element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
 
                         
                         
@@ -459,7 +459,7 @@ class spectra:
                 axs[i[0]].plot(self.esub, self.mod.eval(params = self.fit_results[i[0]].params,x = self.esub) + offset)
 
                 p = [[] for i in range(len(self.pairlist))]
-                fit_legend = [element_text[element[0]] for element in self.pairlist]
+                fit_legend = [cfg.element_text[element[0]] for element in self.pairlist]
 
                 for pairs in enumerate(self.pairlist):
 
@@ -476,7 +476,7 @@ class spectra:
                                                     color = hue[pairs[1][0]], alpha=0.3)
                     
                     if ref_lines == True:
-                        axs[i[0]].axvline(x = element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
+                        axs[i[0]].axvline(x = cfg.element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
 
 
                 fig.legend(p,fit_legend,bbox_to_anchor=(0.5, 1, 0.5, 0.5), loc='lower center',fontsize=30)
@@ -599,7 +599,7 @@ class spectra:
     #     #     else:
     #     #         self.plot_idx = dc(list(self.spectra_to_fit_widget.value)) 
     #     if colors is None:
-    #         hue = element_color
+    #         hue = cfg.element_color
     #     else:
     #         hue = colors
 
@@ -629,7 +629,7 @@ class spectra:
     #         # for i in self.fit_results_idx:
 
     #             p = [[] for i in range(len(self.pairlist))]
-    #             fit_legend = [element_text[element[0]] for element in self.pairlist]
+    #             fit_legend = [cfg.element_text[element[0]] for element in self.pairlist]
 
                     
     #             print('Plotting fit_results')
@@ -658,7 +658,7 @@ class spectra:
 
 
     #                 if ref_lines == True:
-    #                     axs.axvline(x = element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
+    #                     axs.axvline(x = cfg.element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
 
                         
                         
@@ -693,7 +693,7 @@ class spectra:
     #             axs[i[0]].plot(self.fit_results[i[1]].userkws['x'], self.fit_results[i[1]].best_fit + offset)
 
     #             p = [[] for i in range(len(self.pairlist))]
-    #             fit_legend = [element_text[element[0]] for element in self.pairlist]
+    #             fit_legend = [cfg.element_text[element[0]] for element in self.pairlist]
 
     #             for pairs in enumerate(self.pairlist):
 
@@ -709,7 +709,7 @@ class spectra:
     #                                                 color = hue[pairs[1][0]], alpha=0.3)
                     
     #                 if ref_lines == True:
-    #                     axs[i[0]].axvline(x = element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
+    #                     axs[i[0]].axvline(x = cfg.element_refpos[pairs[1][0]],color = hue[pairs[1][0]])
 
 
     #             fig.legend(p,fit_legend,bbox_to_anchor=(0.5, 1, 0.5, 0.5), loc='lower center',fontsize=30)
