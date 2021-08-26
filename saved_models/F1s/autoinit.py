@@ -1,7 +1,5 @@
 import XPyS
-import XPyS.autofit
 import XPyS.config
-from XPyS.autofit import SpectraModelNet
 from XPyS.helper_functions import guess_from_data, index_of
 import os
 import XPyS.config

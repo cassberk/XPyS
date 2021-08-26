@@ -18,7 +18,6 @@ from .helper_functions import index_of, guess_from_data
 from XPyS.gui_element_dicts import *
 
 import XPyS.VAMAS
-import XPyS.autofit
 import os
 import glob
 from IPython import embed as shell

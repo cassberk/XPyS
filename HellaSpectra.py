@@ -20,7 +20,6 @@ from .helper_functions import index_of, guess_from_data
 import XPyS.gui_element_dicts
 import XPyS.config as cfg
 import XPyS.VAMAS
-import XPyS.autofit
 import os
 import h5py
 
