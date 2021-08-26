@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from XPyS.gui_element_dicts import *
 import matplotlib.patches as mpatches
+import XPyS
 import XPyS.config as cfg
 
 
