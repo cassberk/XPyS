@@ -834,7 +834,7 @@ class HellaSpectra:
 
         return fig, axs
 
-    def find_linautofit(self,Xs,Ys,plotflag = True):
+    def linfit(self,X,Y,plotflag = True):
         """
         Linear regression of specified entries in self.df
 
@@ -846,26 +846,29 @@ class HellaSpectra:
         Ys: list 
             list of y-axes df entries
         """
+        fulldf = self.spectra.join(self.params,how = 'inner')
+        if hasattr(self,'pc'):
+            fulldf = fulldf.join(self.pc,how = 'inner')
+        if hasattr(self,'W'):
+            fulldf = fulldf.join(self.W,how = 'inner')
+
         # We can rewrite the line equation as y = Ap, where A = [[x 1]] and p = [[m], [b]]
         autofitparlist = []
-        fig, axs = plt.subplots(1,len(Xs),figsize = (4*len(Xs),4))
+        fig, axs = plt.subplots()
 
-        for i in range(len(Ys)):
-            # print(Xs[i])
-            # print(Ys[i])
-            x = np.array(self.df[Xs[i]])
-            y = np.array(self.df[Ys[i]])
-            A = np.hstack((x.reshape(-1,1),  np.ones(len(x)).reshape(-1,1)))
-            m,b = np.linalg.lstsq(A, y,rcond = None)[0]
+        lfpars = {}
 
-            # m = np.linalg.lstsq(x.reshape(-1,1), y,rcond = None)[0][0]
+        x = np.array(fulldf[X])
+        y = np.array(fulldf[Y])
+        A = np.hstack((x.reshape(-1,1),  np.ones(len(x)).reshape(-1,1)))
+        lfpars['m'],lfpars['b'] = np.linalg.lstsq(A, y,rcond = None)[0]
 
-            autofitparlist.append(' '.join([Ys[i],'lin',str(np.round(Xs[i],1)),str(np.round(m,3)),str(np.round(b,3))]))
+        # m = np.linalg.lstsq(x.reshape(-1,1), y,rcond = None)[0][0]
 
-            if plotflag == True:
-                axs[i].plot(x, y,'o')
-                axs[i].plot(x, m*x+b)
-                axs[i].set_xlabel(str(np.round(Xs[i],2))+' vs '+str(Ys[i]),fontsize = 14)
-                fig.tight_layout()
+        if plotflag == True:
+            axs.plot(x, y,'o')
+            axs.plot(x, lfpars['m']*x+lfpars['b'])
+            axs.set_xlabel(str(Y) + ' vs ' + str(X),fontsize = 14)
+            fig.tight_layout()
 
-        return autofitparlist, fig, axs
+        return lfpars, fig, axs
