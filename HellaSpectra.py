@@ -110,7 +110,9 @@ class HellaSpectra:
 
             self._check_bounds(emin,emax)
             xnew = np.arange(emin, emax, step)
-
+        
+        # round the interpolation Binding Energies off to the thousandth
+        xnew = np.round(xnew,3)
         return xnew
             # probably want to make the spacing even given by ev step 0.1 but fuck it for now.
         # print(emin,emax)
@@ -810,7 +812,7 @@ class HellaSpectra:
             j =0
 
             if type(Ys[i]) == float:
-                axs[a].set_ylabel(np.round(Ys[i],2),fontsize = 26)
+                axs[a].set_ylabel(Ys[i],fontsize = 26)
             else:
                 axs[a].set_ylabel(Ys[i],fontsize = 26)
 
