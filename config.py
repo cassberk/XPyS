@@ -7,7 +7,7 @@ import XPyS
 import pandas as pd
 
 datarepo = {
-    'stoqd':'/Volumes/GoogleDrive/Shared drives/StOQD/sample_library',
+    'lblaqt':'/Volumes/GoogleDrive/Shared drives/LBL_AQT_samples/sample_library',
     'mahmut':'/Volumes/GoogleDrive/Shared drives/Quantum Coherence - Mahmut Sami Kavrik/Samples'
     }
 
