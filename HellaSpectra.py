@@ -28,6 +28,9 @@ from scipy.stats import pearsonr
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import train_test_split
+
 import matplotlib.patches as mpatches
 import decimal
 
@@ -874,3 +877,47 @@ class HellaSpectra:
             fig.tight_layout()
 
         return lfpars, fig, axs
+
+
+    def split_spectra(self,test_size = 0.3):
+        """
+        Split the spectra data into train and test arrays. Also create a target_array attribute
+
+        Parameters
+        ----------
+        test_size: float
+            fraction of data to use to test the Decision boundary.
+        """        
+        self.target_array = self.spectra.index.get_level_values('target').values
+        return train_test_split(self.spectra.values, self.target_array, test_size=test_size)
+
+    def lda(self,test_size = 0.3):
+        """
+        Perform Linear Discriminant Analysis on the spectra and plot the principal components
+
+        Parameters
+        ----------
+        test_size: float
+            fraction of data to use to test the Decision boundary.
+        """
+
+        self.spec_train, self.spec_test, self.target_train, self.target_test = self.split_spectra(test_size = test_size)
+
+        self.skit_lda = LinearDiscriminantAnalysis()
+
+        self.lda_trans = self.skit_lda.fit(self.spec_train, self.target_train).transform(self.spectra.values)
+
+        test_array = self.target_test == self.skit_lda.predict(self.spec_test)
+        test_array = test_array.astype(int)
+        self.lda_correct = test_array.sum()/len(test_array)
+
+        n_targets = len(self.spectra.index.levels[0])
+        colormap = plt.cm.nipy_spectral
+        colors_targets = [colormap(i) for i in np.linspace(0, 1,n_targets)]
+
+        fig,ax = plt.subplots(figsize = (12,8))
+        for tar in enumerate(self.spectra.index.levels[0]):
+            ax.hist(self.lda_trans[self.target_array==tar[1]], bins='auto', label=tar[1],color = colors_targets[tar[0]])
+
+        ax.legend(bbox_to_anchor=(1.05, 0.5), loc='upper left',fontsize = 18)
+        fig.tight_layout()
