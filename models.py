@@ -168,8 +168,13 @@ def _spectramodel_to_hdf5(spectra_model,path):
 
         # pairlist
         try:
-#             dt = h5py.special_dtype(vlen=str)
-#             plist = np.asarray([pair for pair in pairlist], dtype=dt) 
+            # singlets in tuples do not save using .hdf5. Need to add an empty string to the tuple to save.
+            pairlist = []
+            for pair in spectra_model.pairlist:
+                if len(pair) == 1:
+                    pairlist.append((pair[0],''))
+                else:
+                    pairlist.append(pair)
             f.attrs['pairlist'] = pairlist
         except:
             print(path,'couldnt save pairlist')
@@ -213,19 +218,6 @@ def save_spectra_model(spectra_model,element = None,name = None,filepath = None)
         raise NameError('You must specify the element. Ex: "C", "Nb" and "O"')
     if (not name is None and not filepath is None):
         raise NameError('You must choose either a name or a filepath')
-
-    model = spectra_model.model
-    pars = spectra_model.pars
-
-    # singlets in tuples do not save using .hdf5. Need to add an empty string to the tuple to save.
-    pairlist = []
-    for pair in spectra_model.pairlist:
-        if len(pair) == 1:
-            pairlist.append((pair[0],''))
-        else:
-            pairlist.append(pair)
-            
-    element_ctrl = spectra_model.element_ctrl
 
     if filepath is None:
         model_folder = element+spectra_model.orbital
