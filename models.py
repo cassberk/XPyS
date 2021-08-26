@@ -138,7 +138,6 @@ def _spectramodel_to_hdf5(spectra_model,path):
 
     mod = spectra_model.model
     pars = spectra_model.pars
-    pairlist = spectra_model.pairlist
     element_ctrl = spectra_model.element_ctrl
     orbital = spectra_model.orbital
 
