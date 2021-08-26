@@ -281,7 +281,7 @@ class spectra:
 
                     self.get_autofit_model()
 
-                self.update_autofit_params(self,esub,self.isub[i])
+                self.update_autofit_params(self.esub,self.isub[i])
 
             self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
