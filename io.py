@@ -26,53 +26,53 @@ def save_sample(sample_obj,filepath = None, experiment_name = None,force = False
         return
 
 
-    f = h5py.File(filepath,'a')
-    # if experiment_name in f.keys() and force == False:
-    #     print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
-    #         or save the individual attribute you are interested in')
-    #     return
+    with h5py.File(filepath,'a') as f:
+        # if experiment_name in f.keys() and force == False:
+        #     print('Experiment already exists with the same name. Set force = True to delete experiment and save a new one \
+        #         or save the individual attribute you are interested in')
+        #     return
 
-    # elif experiment_name in f.keys() and force == True:
-    #     del f[experiment_name]
-    #     experiment_group = f.create_group(experiment_name)
-    
-    # else:
-    #     experiment_group = f.require_group(experiment_name)
-
-
-    if any(['total_area' == it for it in [i[0] for i in f[experiment_name].items()]]):
-        del f[experiment_name]['total_area']
-    for group_attr in ['positions','bg_info','atomic_percent']:
-        if any([group_attr == it for it in [i for i in f[experiment_name].attrs]]):
-            del f[experiment_name].attrs[group_attr]
-
-    # total_area
-    try:
-        f[experiment_name].create_dataset('total_area', data = sample_obj.total_area)
-    except:
-        print('couldnt total area')
-        pass
-    
-    # scan positions
-    try:
-        f[experiment_name].attrs['positions'] = sample_obj.positions  #prob want to change this eventually
-    except:
-        print('position')
-        # f[experiment_name].attrs['positions'] = 'Not Specified'
+        # elif experiment_name in f.keys() and force == True:
+        #     del f[experiment_name]
+        #     experiment_group = f.create_group(experiment_name)
         
-    #json dictionaries
-    try:
-        f[experiment_name].attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
-    except:
-        print('couldnt bg_info on sampleobj')
-        pass
-    try:
-        f[experiment_name].attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
-    except:
-        print('couldnt atomic_percent on sample obj')
-        pass
+        # else:
+        #     experiment_group = f.require_group(experiment_name)
 
-    f.close()
+        #'all_scans','atomic_percent','bg_info','data_path','element_scans','sample_name'
+
+        if any(['total_area' == it for it in [i[0] for i in f[experiment_name].items()]]):
+            del f[experiment_name]['total_area']
+        for group_attr in ['positions','bg_info','atomic_percent']:
+            if any([group_attr == it for it in [i for i in f[experiment_name].attrs]]):
+                del f[experiment_name].attrs[group_attr]
+
+        # total_area
+        try:
+            f[experiment_name].create_dataset('total_area', data = sample_obj.total_area)
+        except:
+            print('couldnt total area')
+            pass
+        
+        # scan positions
+        try:
+            f[experiment_name].attrs['positions'] = sample_obj.positions  #prob want to change this eventually
+        except:
+            print('position')
+            # f[experiment_name].attrs['positions'] = 'Not Specified'
+            
+        #json dictionaries
+        try:
+            f[experiment_name].attrs['bg_info'] = json.dumps(sample_obj.bg_info, default=dumper, indent=2)
+        except:
+            print('couldnt bg_info on sampleobj')
+            pass
+        try:
+            f[experiment_name].attrs['atomic_percent'] =json.dumps(sample_obj.atomic_percent, default=dumper, indent=2)
+        except:
+            print('couldnt atomic_percent on sample obj')
+            pass
+
 
     for spectra in sample_obj.element_scans:
         save_spectra_analysis(sample_obj.__dict__[spectra],filepath = filepath,experiment_name = experiment_name,force = force)
