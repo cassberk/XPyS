@@ -1,9 +1,3 @@
-from ipywidgets.widgets import Label, FloatProgress, FloatSlider, Button, Checkbox,FloatRangeSlider, Button, Text,FloatText,\
-Dropdown,SelectMultiple, Layout, HBox, VBox, interactive, interact, Output,jslink
-from IPython.display import display, clear_output
-from ipywidgets import GridspecLayout
-from ipywidgets.widgets.interaction import show_inline_matplotlib_plots
-
 import numpy as np
 import pandas as pd
 from copy import deepcopy as dc
