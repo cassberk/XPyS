@@ -262,9 +262,7 @@ class spectra:
 
         if track:
             pbar = tqdm(total=len(specific_points))
-        # self.par_guess_track = {}
-        # self.par_guess_track['O1_amplitude'] = []
-        # self.par_guess_track['O2_amplitude'] = []
+
         if autofit:
             print('autofitting...')
         for i in specific_points:
