@@ -7,7 +7,11 @@ import numpy as np
 
 class AutoInit:
     
-    def __init__(self):
+    def __init__(self,spectra_object):
+        self.spectra_object = spectra_object
+        self.E = self.spectra_object.E
+        self.I = self.spectra_object.I
+
         self._load_autofit()
 
 
@@ -17,14 +21,15 @@ class AutoInit:
         f = open(autofitpars_path, "r")
         comdic = {}
         for line in f.readlines():
-            # print(line)
             comdic[line.split(' ')[0]] = [l.rstrip('\n') for l in line.split(' ')[1:]]
         f.close()
         
         self.autofit_pars = comdic
 
-    def guess_params(self,energy,intensity):
-
+    def guess_params(self,idx):
+        
+        energy = self.spectra_object.esub
+        intensity = self.spectra_object.isub[idx]
         guessamp = {}
         for par in self.autofit_pars.keys():
                         

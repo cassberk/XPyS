@@ -273,7 +273,7 @@ class spectra:
 
                     self.get_autofit_model()
 
-                self.update_autofit_params(self.esub,self.isub[i])
+                self.update_autofit_params(idx = i)
 
             self.fit_results[i]  = self.mod.fit(self.isub[i], self.params, x=self.esub, method = fit_method)     
 
@@ -308,12 +308,12 @@ class spectra:
         """imports the AutoInit object from the autoinit module from the correct orbital folder in the saved_models folder"""
         module = importlib.import_module('XPyS.saved_models.'+self.orbital+'.autoinit')
         autoinit_class = getattr(module, 'AutoInit')
-        autoinit_instance = autoinit_class()
+        autoinit_instance = autoinit_class(self)
         self.autofit =  autoinit_instance
 
-    def update_autofit_params(self,energy,intensity):
+    def update_autofit_params(self,idx):
         """update the spectra.params object from the autofit.params"""
-        self.autofit.guess_params(energy,intensity)
+        self.autofit.guess_params(idx = idx)
 
         for par in self.autofit.params.keys():
             self.params[par].value = self.autofit.params[par]
