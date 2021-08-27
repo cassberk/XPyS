@@ -279,7 +279,7 @@ class HellaSpectra:
         self.spectra = pd.DataFrame(_yN,columns = self.spectra.columns,index = self.spectra.index)
         self._update_info('Normalized')
 
-    def plot_spectra(self,offset = 0,avg = False):
+    def plot_spectra(self,offset = 0,target = None, avg = False):
         """
         Plot all the spectra
 
@@ -291,12 +291,19 @@ class HellaSpectra:
         avg: bool
             Option to plot mean spectra. Default False
         """
+        if target == None:
+            spectra_to_plot = self.spectra.values
+        elif target != None:
+            if not target in self.spectra.index.levels[0]:
+                raise ValueError('target not in index')
+            spectra_to_plot = self.spectra.xs(target,level = 'target').values
+
         fig, ax = plt.subplots()
         if not avg:
-            for i in range(len(self.spectra.values)):
-                ax.plot(self.energy,self.spectra.values[i,:]+i*offset)
+            for i in range(len(spectra_to_plot)):
+                ax.plot(self.energy,spectra_to_plot[i,:]+i*offset)
         if avg:
-            ax.plot(self.energy,self.spectra.values.mean(axis=0))
+            ax.plot(self.energy,spectra_to_plot.mean(axis=0))
 
         ax.set_xlabel('Binding Energy',fontsize = 15)
         if 'Normalized' in self.info:
