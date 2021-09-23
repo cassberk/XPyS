@@ -1,21 +1,17 @@
-# Try to load individual packages at some point
 import pandas as pd
 from copy import deepcopy as dc
 import XPyS
 from .helper_functions import index_of, guess_from_data
 
-# from .bkgrds import backsub
-# from XPyS.avantage_io import load_excel
 import lmfit as lm
 import numpy as np
 import matplotlib.pyplot as plt
 
-import XPyS.spectra as sp
+import XPyS.spectra
 from XPyS.compound import CompoundSpectra
 import XPyS.config as cfg
 import XPyS.VAMAS
 import os
-from IPython import embed as shell
 
 
 
@@ -117,14 +113,14 @@ class sample:
         
         for scan in self.all_scans:
             if scan =='vb':
-                self.__dict__[scan] = sp.spectra()
-                sp.spectra.load_experiment_spectra_from_vamas(self.__dict__[scan],vamas_obj,orbital = 'V.B.')
+                self.__dict__[scan] = XPyS.spectra.spectra()
+                XPyS.spectra.spectra.load_experiment_spectra_from_vamas(self.__dict__[scan],vamas_obj,orbital = 'V.B.')
             elif scan =='survey':
-                self.__dict__[scan] = sp.spectra()
-                sp.spectra.load_experiment_spectra_from_vamas(self.__dict__[scan],vamas_obj,orbital = 'XPSSurvey')                
+                self.__dict__[scan] = XPyS.spectra.spectra()
+                XPyS.spectra.spectra.load_experiment_spectra_from_vamas(self.__dict__[scan],vamas_obj,orbital = 'XPSSurvey')                
             else:
-                self.__dict__[scan] = sp.spectra(bg_info = self.bg_info[scan])
-                sp.spectra.load_experiment_spectra_from_vamas(self.__dict__[scan],vamas_obj,orbital = scan)
+                self.__dict__[scan] = XPyS.spectra.spectra(bg_info = self.bg_info[scan])
+                XPyS.spectra.spectra.load_experiment_spectra_from_vamas(self.__dict__[scan],vamas_obj,orbital = scan)
 
     def load_experiment_sample_from_excel(self,excel_obj,name):
             if type(excel_obj) == str:
