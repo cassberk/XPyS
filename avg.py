@@ -5,7 +5,6 @@ import numpy as np
 import glob
 import json
 import os
-from IPython import embed as shell
 
 def dumper(obj):
     try:
@@ -209,7 +208,7 @@ def avg_to_hdf5(sample_name,experiment_name,avgfiles = None,savepath=None,force 
                 experiment_group.attrs['sample_name'] = sample_name
             except:
                 print('sample_name didnt work')
-            # shell()
+
             PROPERTIES, SPACEAXES, AXESDICT, DATA = read_avg(fp)
 
             experiment_group.require_group(spectra)
