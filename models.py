@@ -5,7 +5,7 @@ import os
 import numpy as np
 import XPyS
 import XPyS.config as cfg
-from .helper_functions import index_of, guess_from_data
+from .helper_functions import index_of
 
 from lmfit.models import GaussianModel, LorentzianModel, PseudoVoigtModel, SkewedVoigtModel
 
