@@ -1,29 +1,14 @@
-import time
-import threading
-import logging
 import math
 import numpy as np
 from copy import deepcopy as dc
 import matplotlib.pyplot as plt
 from tqdm import tqdm_notebook as tqdm
-import pickle
 import lmfit as lm
-
-import sys
 import XPyS
 import XPyS.config as cfg
 import XPyS.models
 import XPyS.bkgrds as backsub
-from .helper_functions import index_of, guess_from_data
-
-# from XPyS.gui_element_dicts import *
-
-import XPyS.VAMAS
-import os
-import glob
-import importlib
-from IPython import embed as shell
-
+from .helper_functions import index_of
 import importlib
 
 class spectra:
