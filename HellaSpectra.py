@@ -8,14 +8,10 @@ import matplotlib.cm as cm
 from tqdm import tqdm_notebook as tqdm
 
 import XPyS
-from XPyS import bkgrds as backsub
 from .helper_functions import index_of, guess_from_data
 
-# import XPyS.gui_element_dicts
 import XPyS.config as cfg
-import XPyS.VAMAS
 import os
-import h5py
 
 from sklearn.decomposition import PCA, NMF
 from scipy.stats import pearsonr
@@ -27,8 +23,6 @@ from sklearn.model_selection import train_test_split
 
 import matplotlib.patches as mpatches
 import decimal
-
-from IPython import embed as shell
 
 class HellaSpectra:
     """
