@@ -6,7 +6,6 @@ import XPyS.sample
 import XPyS.spectra
 import json
 import lmfit as lm
-from pathlib import Path
 import os
 
 def dumper(obj):
