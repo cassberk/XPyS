@@ -1,4 +1,4 @@
-package_location = "/Users/cassberk/code"
+package_location = "/Users/cassberk/code/XPyS_package/src"
 
 import sys
 import os
